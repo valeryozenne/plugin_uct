@@ -18,6 +18,7 @@ from girder.models.collection import Collection
 from girder.models.token import Token
 from girder import events
 from girder.api import access
+from girder.utility import mail_utils
 
 from girder.constants import AccessType, TokenScope
 from girder.api.rest import boundHandler, getCurrentUser
@@ -31,6 +32,7 @@ import json
 import os
 import glob
 import numpy as np
+from string import Template
 
 # list of function that should be moved in other python_file.py for clearity
 
@@ -358,6 +360,17 @@ def json_insertion_scenario(fileId):
         print("Number of images in the folder:",count_images_in_folder(path_to_drive))
 
 
+def read_mail_template(filename):
+    with open(filename, 'r', encoding='utf-8') as template_file:
+        template_file_content = template_file.read()
+    return Template(template_file_content)
+
+
+def mail_sender():
+    message_template = read_mail_template('mymessage.txt')
+    message = message_template.substitute(PERSON_NAME=getCurrentUser()['firstName'] + " " + getCurrentUser()['lastName'])
+    mail_utils.sendMail(subject='My mail from girder', text=message, to=getCurrentUser()['email'])
+
 def _launchAction(event):
     print('================Lanching the Job===================')   
     fileId = event.info['_id']
@@ -365,6 +378,7 @@ def _launchAction(event):
         print("A json has been inserted \n")
         json_insertion_scenario(fileId)
 
+    mail_sender()
     print('===================================================')
 
 
