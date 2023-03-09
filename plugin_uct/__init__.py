@@ -338,6 +338,35 @@ def _handler_data_process(event):
     print('####################')
 
 
+def count_images_in_folder(folder_path):
+    img_count = 0
+    for _, _, files in os.walk(folder_path, topdown=False):
+        for name in files:
+            _, extension = os.path.splitext(name)
+            if extension.lower() == '.bmp':
+                img_count += 1
+    return img_count
+    
+def json_insertion_scenario(fileId):
+    json_file = File().load(fileId, force=True)
+    with File().open(json_file) as f:
+        json_data = json.load(f)
+    print(json_data)
+    if(is_json_key_present(json_data,'disque')):
+        path_to_drive = json_data['disque']
+        print("Count images in the disc folder:",path_to_drive)
+        print("Number of images in the folder:",count_images_in_folder(path_to_drive))
+
+
+def _launchAction(event):
+    print('================Lanching the Job===================')   
+    fileId = event.info['_id']
+    if(event.info['mimeType'] == "application/json"):
+        print("A json has been inserted \n")
+        json_insertion_scenario(fileId)
+
+    print('===================================================')
+
 
 class GirderPlugin(plugin.GirderPlugin):
     DISPLAY_NAME = 'plugin_uct'
@@ -353,7 +382,7 @@ class GirderPlugin(plugin.GirderPlugin):
         # basically the line below trigger the plugin if a file is uploaded
         
         # be careful for some reasons the data process events cannot send jobs..
-        events.bind('data.process', 'my_first_process', _handler_data_process) 
+        # events.bind('data.process', 'my_first_process', _handler_data_process) 
         # while the events bind model can send jobs
-        # events.bind('model.file.save.after', 'lance une action', _handler)       
+        events.bind('model.file.save.after', 'lance une action', _launchAction)       
         pass
