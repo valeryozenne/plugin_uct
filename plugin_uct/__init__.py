@@ -26,6 +26,11 @@ from girder.api.describe import Description, autoDescribeRoute
 from girder.api.rest import Resource
 from girder.models.assetstore import Assetstore
 
+from girder_worker.app import app
+from girder_jobs import Job
+from girder_client import GirderClient
+from girder_jobs.constants import JobStatus
+from plugin_uct.Tasks.Task1_img_conversion import call_girder_worker_convert_images_to_zarr,call_girder_worker_convert_images_to_nii
 
 ## other import related to standard python
 import json
@@ -175,6 +180,9 @@ def call_function_rec_conversion(json_dictionary, event):
 def create_the_directories():
     pass 
 
+def assert_job_state_is_success(job):
+    assert(job['status']==JobStatus.SUCCESS)
+
 def extract_the_log_information(json_dictionary, event):
     
     # function do too many things, it has to be splitted
@@ -189,14 +197,13 @@ def extract_the_log_information(json_dictionary, event):
     print('extract_the_log_information')
     print('####################')
 
-    if (json_dictionary['disque']!='Imagerie2'):
-       raise ValueError("Error")
-    else:
-       pass
+    # if (json_dictionary['disque']!='Imagerie2'):
+    #    raise ValueError("Error")
+    # else:
+    #    pass
       # it should define in the json file
 
-    folder_json_dictionarybase_uct='/home/valeryozenne/mount/Imagerie/For_Valery/Girder_MicroCT/' 
-
+    folder_json_dictionarybase_uct='/home/zadig/Downloads/Girder_MicroCT/'
     check_folder_exist(folder_json_dictionarybase_uct)
     name_project=json_dictionary['project-date']+'_'+ json_dictionary['project-id']+'_'+ json_dictionary['project-name'];
     name_sample=json_dictionary['sample-date']+'_'+ json_dictionary['sample-id']+'_'+ json_dictionary['sample-name'];   
@@ -205,21 +212,24 @@ def extract_the_log_information(json_dictionary, event):
     folder_project=folder_json_dictionarybase_uct+name_project
     folder_sample= folder_json_dictionarybase_uct+name_project+"/"+name_sample
     folder_1_Rec_Data= folder_sample + '/1_Rec_Data'
-    folder_2_Nii_Converted= folder_sample + '/2_Nii_Converted'
+    folder_2_Nii_Conversion= folder_sample + '/Task1_Nii_Conversion'
+    folder_3_Zarr_Conversion = folder_sample +'/Task1_Zarr_Conversion'
     
     check_folder_exist(folder_project)
     check_folder_exist(folder_sample)  
     check_folder_exist(folder_1_Rec_Data)
-    check_folder_exist_or_create_it(folder_2_Nii_Converted)
+    check_folder_exist_or_create_it(folder_2_Nii_Conversion)
+    check_folder_exist_or_create_it(folder_3_Zarr_Conversion)
 
     # this should be define somewhere
-    collection_id='619656b5dce91612bb7256dd'   
+    collection_id='63f77b9f118aa036ca2840fb'   
     collectionDocument = Collection().load(collection_id, level=AccessType.WRITE,force=True)
-     
-    creator=event.info['currentUser']
-    #print(creator)
-    projectFolderDocument = Folder().createFolder( collectionDocument, name_project, parentType='collection',reuseExisting=True, public=True, creator=creator )
-    sampleFolderDocument = Folder().createFolder( projectFolderDocument, name_sample, parentType='folder',reuseExisting=True, public=True, creator=creator )
+    
+    creatorId=event.info['creatorId']
+    creator = {'_id':creatorId}
+    # print(creator)
+    projectFolderDocument = Folder().createFolder( collectionDocument, name_project, parentType='collection',reuseExisting=True, public=True, creator=None )
+    sampleFolderDocument = Folder().createFolder( projectFolderDocument, name_sample, parentType='folder',reuseExisting=True, public=True, creator=None )
     
     # on n'est pas obligé de créer un item
     # on peut mettre les metadata dans le dossier
@@ -260,9 +270,14 @@ def extract_the_log_information(json_dictionary, event):
       print("Error extension tri vaut ", tri[-1])   
       raise ValueError("Error extension tri vaut ", tri[-1])
 
-    #call_girder_worker_conversion_rec_to_nii(folder_1_Rec_Data, folder_2_Nii_Converted,bruker_name, extension, creator) 
-    #creator=event.info['currentUser']
-    #print(creator)
+    nii_job = call_girder_worker_convert_images_to_nii(folder_1_Rec_Data, folder_2_Nii_Conversion,bruker_name, extension)
+    zarr_job = call_girder_worker_convert_images_to_zarr(folder_1_Rec_Data, folder_3_Zarr_Conversion,bruker_name, extension)
+
+    
+    assert_job_state_is_success(nii_job)
+    assert_job_state_is_success(zarr_job)
+    
+    
 
 def read_and_check_that_the_format_of_json_file_is_ok(event):
 
@@ -338,6 +353,7 @@ def _handler_data_process(event):
     print('####################')
     print(' plugin µct fin du handler ') 
     print('####################')
+    
 
 
 def count_images_in_folder(folder_path):
@@ -348,8 +364,24 @@ def count_images_in_folder(folder_path):
             if extension.lower() == '.bmp':
                 img_count += 1
     return img_count
+
+
+def parse_log_file(folder_path):
+    for filename in os.listdir(folder_path):
+        if filename.endswith('.log'):
+            log_file_path = os.path.join(folder_path, filename)
+            break
+    else:
+        print("No .log file found in the folder path")
+        return
     
-def json_insertion_scenario(fileId):
+    with open(log_file_path, 'r') as log_file:
+        content = log_file.read()
+        
+    return content
+
+
+def json_insertion_scenario(fileId, event):
     json_file = File().load(fileId, force=True)
     with File().open(json_file) as f:
         json_data = json.load(f)
@@ -358,6 +390,12 @@ def json_insertion_scenario(fileId):
         path_to_drive = json_data['disque']
         print("Count images in the disc folder:",path_to_drive)
         print("Number of images in the folder:",count_images_in_folder(path_to_drive))
+        # print("log file contents:",parse_log_file(path_to_drive))
+        # zarr_job = call_girder_worker_convert_images_to_zarr(path_to_drive,path_to_drive)
+        # nii_job = call_girder_worker_convert_images_to_nii(path_to_drive, path_to_drive)
+        # print(zarr_job)
+        extract_the_log_information(json_data,event)
+    
 
 
 def read_mail_template(filename):
@@ -373,16 +411,16 @@ def mail_sender():
 
 def _launchAction(event):
     print('================Lanching the Job===================')   
+    
     fileId = event.info['_id']
     if(event.info['mimeType'] == "application/json"):
         print("A json has been inserted \n")
-        json_insertion_scenario(fileId)
-
-    mail_sender()
+        json_insertion_scenario(fileId, event)
+        
     print('===================================================')
 
 
-class GirderPlugin(plugin.GirderPlugin):
+class GirderPlugin(plugin.GirderPlugin):  
     DISPLAY_NAME = 'plugin_uct'
     CLIENT_SOURCE_PATH = 'web_client'
 
@@ -400,3 +438,4 @@ class GirderPlugin(plugin.GirderPlugin):
         # while the events bind model can send jobs
         events.bind('model.file.save.after', 'lance une action', _launchAction)       
         pass
+
