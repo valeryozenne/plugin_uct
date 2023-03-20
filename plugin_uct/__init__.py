@@ -20,6 +20,7 @@ from girder import events
 from girder.api import access
 from girder.utility import mail_utils
 
+from girder.settings import SettingKey
 from girder.constants import AccessType, TokenScope
 from girder.api.rest import boundHandler, getCurrentUser
 from girder.api.describe import Description, autoDescribeRoute
@@ -420,12 +421,31 @@ def _launchAction(event):
     print('===================================================')
 
 
+def read_secrets() -> dict:
+    filename = os.path.join('settings.json')
+    try:
+        with open(filename, mode='r') as f:
+            return json.loads(f.read())
+    except FileNotFoundError:
+        return {}
+
+def set_settings():
+    secrets = read_secrets()
+    SettingKey.SMTP_ENCRYPTION = secrets["SMTP_ENCRYPTION"]
+    SettingKey.SMTP_HOST = secrets["SMTP_HOST"]
+    SettingKey.SMTP_PASSWORD = secrets["SMTP_PASSWORD"]
+    SettingKey.SMTP_PORT = secrets["SMTP_PORT"]
+    SettingKey.SMTP_USERNAME = secrets["SMTP_USERNAME"]
+
+
 class GirderPlugin(plugin.GirderPlugin):  
     DISPLAY_NAME = 'plugin_uct'
     CLIENT_SOURCE_PATH = 'web_client'
 
     def load(self, info):
+
         # add plugin loading logic here
+        set_settings()
 
         print('####################')
         print(' plugin µct start du handler ') 
