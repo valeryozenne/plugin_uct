@@ -20,6 +20,7 @@ from girder import events
 from girder.api import access
 from girder.utility import mail_utils
 
+from girder.utility.progress import ProgressContext
 from girder.settings import SettingKey
 from girder.constants import AccessType, TokenScope
 from girder.api.rest import boundHandler, getCurrentUser
@@ -194,7 +195,7 @@ def extract_the_log_information(json_dictionary, event):
     # save it
     # upload the metadata
 
-    print('####################')
+    print('################# ###')
     print('extract_the_log_information')
     print('####################')
 
@@ -204,7 +205,7 @@ def extract_the_log_information(json_dictionary, event):
     #    pass
       # it should define in the json file
 
-    folder_json_dictionarybase_uct='/home/zadig/Downloads/Girder_MicroCT/'
+    folder_json_dictionarybase_uct='/home/mennad/Documents/GirderEcosystem/Girder_MicroCT/'
     check_folder_exist(folder_json_dictionarybase_uct)
     name_project=json_dictionary['project-date']+'_'+ json_dictionary['project-id']+'_'+ json_dictionary['project-name'];
     name_sample=json_dictionary['sample-date']+'_'+ json_dictionary['sample-id']+'_'+ json_dictionary['sample-name'];   
@@ -223,7 +224,7 @@ def extract_the_log_information(json_dictionary, event):
     check_folder_exist_or_create_it(folder_3_Zarr_Conversion)
 
     # this should be define somewhere
-    collection_id='63f77b9f118aa036ca2840fb'   
+    collection_id='6409fce970e7d5b71f865472'   
     collectionDocument = Collection().load(collection_id, level=AccessType.WRITE,force=True)
     
     creatorId=event.info['creatorId']
@@ -406,6 +407,10 @@ def read_mail_template(filename):
 
 
 def mail_sender():
+    print('################# ###')
+    print('mail_sender')
+    print('####################')
+
     message_template = read_mail_template('mymessage.txt')
     message = message_template.substitute(PERSON_NAME=getCurrentUser()['firstName'] + " " + getCurrentUser()['lastName'])
     mail_utils.sendMail(subject='My mail from girder', text=message, to=getCurrentUser()['email'])
@@ -418,6 +423,7 @@ def _launchAction(event):
         print("A json has been inserted \n")
         json_insertion_scenario(fileId, event)
         
+    mail_sender()
     print('===================================================')
 
 
@@ -430,12 +436,15 @@ def read_secrets() -> dict:
         return {}
 
 def set_settings():
+    from girder.models.setting import Setting
+    setting = Setting()
+    
     secrets = read_secrets()
-    SettingKey.SMTP_ENCRYPTION = secrets["SMTP_ENCRYPTION"]
-    SettingKey.SMTP_HOST = secrets["SMTP_HOST"]
-    SettingKey.SMTP_PASSWORD = secrets["SMTP_PASSWORD"]
-    SettingKey.SMTP_PORT = secrets["SMTP_PORT"]
-    SettingKey.SMTP_USERNAME = secrets["SMTP_USERNAME"]
+    setting.set(SettingKey.SMTP_ENCRYPTION, secrets["SMTP_ENCRYPTION"])
+    setting.set(SettingKey.SMTP_HOST, secrets["SMTP_HOST"])
+    setting.set(SettingKey.SMTP_PASSWORD, secrets["SMTP_PASSWORD"])
+    setting.set(SettingKey.SMTP_PORT, secrets["SMTP_PORT"])
+    setting.set(SettingKey.SMTP_USERNAME, secrets["SMTP_USERNAME"])
 
 
 class GirderPlugin(plugin.GirderPlugin):  
