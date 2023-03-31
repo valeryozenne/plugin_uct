@@ -205,7 +205,7 @@ def extract_the_log_information(json_dictionary, event):
     #    pass
       # it should define in the json file
 
-    folder_json_dictionarybase_uct='/home/mennad/Documents/GirderEcosystem/Girder_MicroCT/'
+    folder_json_dictionarybase_uct='./PyGirderEnv/Girder_MicroCT/'
     check_folder_exist(folder_json_dictionarybase_uct)
     name_project=json_dictionary['project-date']+'_'+ json_dictionary['project-id']+'_'+ json_dictionary['project-name'];
     name_sample=json_dictionary['sample-date']+'_'+ json_dictionary['sample-id']+'_'+ json_dictionary['sample-name'];   
@@ -406,16 +406,16 @@ def read_mail_template(filename):
     return Template(template_file_content)
 
 
-def mail_sender():
+def mail_sender(job_name, start_hour, end_job):
     print('################# ###')
     print('mail_sender')
     print('####################')
-
     message_template = read_mail_template('mymessage.txt')
-    message = message_template.substitute(PERSON_NAME=getCurrentUser()['firstName'] + " " + getCurrentUser()['lastName'])
+    message = message_template.substitute(PERSON_NAME=getCurrentUser()['firstName'] + " " + getCurrentUser()['lastName'], JOB_NAME=job_name, START_HOUR=start_hour, END_JOB=end_job)
     mail_utils.sendMail(subject='My mail from girder', text=message, to=getCurrentUser()['email'])
 
-def _launchAction(event):
+@app.task(bind=True)
+def _launchAction(self, event):
     print('================Lanching the Job===================')   
     
     fileId = event.info['_id']
@@ -423,7 +423,8 @@ def _launchAction(event):
         print("A json has been inserted \n")
         json_insertion_scenario(fileId, event)
         
-    mail_sender()
+    mail_sender(self.name.split(".")[0], event.info['created'].strftime("%H:%M:%S"), "DONE")
+    self.update_state(state="PROGRESS", meta={'progress': 50})
     print('===================================================')
 
 
@@ -447,6 +448,21 @@ def set_settings():
     setting.set(SettingKey.SMTP_USERNAME, secrets["SMTP_USERNAME"])
 
 
+def validateJobStatus(event):
+    if event.info == 0:
+        print("####################INACTIVE####################")
+    if event.info == 1:
+        print("####################QUEUED####################")
+    if event.info == 2:
+        print("####################RUNNING####################")
+    if event.info == 3:
+        print("####################SUCCESS####################")
+    if event.info == 4:
+        print("####################ERROR####################")
+    if event.info == 5:
+        print("####################CANCELED####################")
+
+
 class GirderPlugin(plugin.GirderPlugin):  
     DISPLAY_NAME = 'plugin_uct'
     CLIENT_SOURCE_PATH = 'web_client'
@@ -465,6 +481,7 @@ class GirderPlugin(plugin.GirderPlugin):
         # be careful for some reasons the data process events cannot send jobs..
         # events.bind('data.process', 'my_first_process', _handler_data_process) 
         # while the events bind model can send jobs
-        events.bind('model.file.save.after', 'lance une action', _launchAction)       
+        events.bind('model.file.save.after', 'lance une action', _launchAction) 
+        # events.bind('jobs.status.validate', 'plugin_job_state_tracking', validateJobStatus)
         pass
 
