@@ -11,7 +11,16 @@ from girder_jobs.models.job import Job
 from girder.constants import AccessType, TokenScope
 from girder_jobs import Job
 from girder_jobs.constants import JobStatus
+from girder.models.token import Token
+from girder.api.rest import getCurrentUser
+from celery.result import AsyncResult
 
+
+@app.task(bind=True)
+def fibonacci(n):
+    if n == 1 or n == 2:
+        return 1
+    return fibonacci(n-1) + fibonacci(n-2)
 
 # @app.task
 # def task1_convert_rec_to_zarr(job,folder_path, save_folder_path):
@@ -67,17 +76,10 @@ from girder_jobs.constants import JobStatus
 
 
 
-@app.task
-def task1_convert_rec_to_nii(job,input_dir, output_dir, bruker_name, extension):
+@app.task(bind=True)
+def task1_convert_rec_to_nii(self,input_dir, output_dir, bruker_name, extension):
     
     print('Starting the job')
-    
-    job = Job().updateJob(
-            job, log='Started Nii conversion\n',
-            status=JobStatus.RUNNING,
-            progressCurrent=0,
-            progressTotal=100
-        )
     
     file_pattern = os.path.join(input_dir, bruker_name + '__rec0000????' + extension)
     file_list = glob.glob(file_pattern, recursive=False)
@@ -107,13 +109,6 @@ def task1_convert_rec_to_nii(job,input_dir, output_dir, bruker_name, extension):
     elapsed = time.time() - t
     print(f"Loaded {len(im_collection)} files in {elapsed:.2f} seconds")
     
-    # Update progress and status
-    job = Job().updateJob(
-            job, log=f'Loaded {len(im_collection)} files in {elapsed:.2f} seconds\n',
-            status=JobStatus.RUNNING,
-            progressCurrent=20,
-            progressTotal=100
-        )
 
     # Create NIfTI image and save to disk
     try:
@@ -128,28 +123,12 @@ def task1_convert_rec_to_nii(job,input_dir, output_dir, bruker_name, extension):
         status = JobStatus.ERROR
 
     print('Ending the job')
-    job = Job().updateJob(
-            job, log='Finished Nii conversion\n',
-            status=status,
-            progressCurrent=100,
-            progressTotal=100
-        )
-    return job
+    return None
 
 
-@app.task
-def convert_rec_to_zarr(job, input_dir, output_dir, bruker_name, extension):
+@app.task(bind=True)
+def convert_rec_to_zarr(self, input_dir, output_dir, bruker_name, extension):
     print('Starting the job')
-    
-    # Update job status to RUNNING
-    job = Job().updateJob(
-        job,
-        log='Started Zarr conversion\n',
-        status=JobStatus.RUNNING,
-        progressCurrent=0,
-        progressTotal=100
-    )
-
     print(f'Searching for files in {input_dir}/{bruker_name}__rec0000????{extension}')
     
     # Find all image files
@@ -171,15 +150,7 @@ def convert_rec_to_zarr(job, input_dir, output_dir, bruker_name, extension):
                 num_truncated_files += 1
                 print(f'Attention: using the same image twice. File {i} is truncated.')
             else:
-                # Update job status to ERROR if the first file is truncated
-                job = Job().updateJob(
-                    job,
-                    log=f'Error: The first file {image_path} is truncated.\n',
-                    status=JobStatus.ERROR,
-                    progressCurrent=0,
-                    progressTotal=100
-                )
-                return job
+                return None
     print(f'Found {num_truncated_files} truncated files')
 
     # Concatenate images
@@ -189,73 +160,48 @@ def convert_rec_to_zarr(job, input_dir, output_dir, bruker_name, extension):
     image_3d = image_collection.concatenate()
     elapsed_time = time.time() - t_start
     print(f'Finished concatenating images in {elapsed_time:.2f}s')
-    
-    # Update progress to 40%
-    job = Job().updateJob(
-        job,
-        log='40% of the job completed.\n',
-        status=JobStatus.RUNNING,
-        progressCurrent=40,
-        progressTotal=100
-    )
-
-    # Save as .zarr
     t_start = time.time()
     print(f'Saving .zarr file to {output_dir}')
     os.makedirs(output_dir, exist_ok=True)
     try:
         zarr.save(output_dir, image_3d)
     except Exception as e:
-        # Update job status to ERROR if there is an error while saving
-        job = Job().updateJob(
-            job,
-            log=f'Error: {str(e)}\n',
-            status=JobStatus.ERROR,
-            progressCurrent=0,
-            progressTotal=100
-        )
-        return job
+        return None
     elapsed_time = time.time() - t_start
     print(f'Finished saving .zarr file in {elapsed_time:.2f}s')
 
-    # Update progress to 100%
-    job = Job().updateJob(
-        job,
-        log='Finished Zarr Conversion\n',
-        status=JobStatus.SUCCESS,
-        progressCurrent=100,
-        progressTotal=100
-    )
-    
-    return job
+    return None
 
 def call_girder_worker_convert_images_to_zarr(input_dir,output_dir,bruker_name,extension):
     
-    zarr_job = Job().createLocalJob(
-                module='plugin_uct.Tasks',
-                function='task1_convert_rec_to_zarr',
-                title='Convert Rec to zarr',
-                type='conversion',
-                public=False,
-                asynchronous=True
-            )
-    zarr_job = convert_rec_to_zarr(zarr_job,input_dir,output_dir,bruker_name,extension)
-
-    return zarr_job
+    token = Token().createToken(user=getCurrentUser())
+    async_result = convert_rec_to_zarr.delay(
+        input_dir, output_dir, bruker_name, extension,
+        girder_job_title='Convert Rec to Zarr',
+        girder_job_type='conversion to zarr',
+        girder_job_public=False,
+        girder_client_token=token['_id'],
+    )
+    while not async_result.ready():
+        print(f"Task is still running. Current status: {async_result.status}")
+        time.sleep(1)
+    print(f"Task is complete. Final status: {async_result.status}")
+    return async_result
 
 
 
 def call_girder_worker_convert_images_to_nii(input_dir,output_dir,bruker_name,extension):
 
-    nii_job = Job().createLocalJob(
-            module='plugin_uct.Tasks',
-            function='convert_rec_to_nii',
-            title='Convert Rec to Nii',
-            type='conversion',
-            public=False,
-            asynchronous=True
-        )
-    
-    nii_job = task1_convert_rec_to_nii(nii_job,input_dir,output_dir,bruker_name,extension)
-   
-    return nii_job
+    token = Token().createToken(user=getCurrentUser())
+    async_result = task1_convert_rec_to_nii.delay(
+        input_dir, output_dir, bruker_name, extension,
+        girder_job_title='Convert Rec to Nii',
+        girder_job_type='conversion',
+        girder_job_public=False,
+        girder_client_token=token['_id'],
+    )
+    while not async_result.ready():
+        print(f"Task is still running. Current status: {async_result.status}")
+        time.sleep(3)
+    print(f"Task is complete. Final status: {async_result.status}")
+    return async_result
