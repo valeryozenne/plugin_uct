@@ -42,31 +42,50 @@ import glob
 import numpy as np
 from string import Template
 
+from girder_worker_utils.decorators import argument
+from girder_worker_utils import types
+
+#######################
+
 # list of function that should be moved in other python_file.py for clearity
 
 def check_file_exist(file):
+   '''
+    TODO
+    '''
    if not (os.path.isfile(file)):
     print('file ',file,' doesn t exist')   
     raise ValueError("Error folder", file)
     
 def check_folder_exist(folder):
+   '''
+    TODO
+    '''
    if not (os.path.isdir(folder)):
     print('folder ',folder,' doesn t exist')   
     raise ValueError("Error folder", folder)
     
 def check_folder_exist_or_create_it(folder):
+   '''
+    TODO
+    '''
    if not (os.path.isdir(folder)):
       os.mkdir(folder)
     
 def is_json_key_present(json, key):
+    '''
+    TODO
+    '''
     try:
         buf = json[key]
     except KeyError:
         raise ValueError("No target in given data", key)
     return True
 
-
-def fix_bordel_with_list_and_dict(sub_list_of_json_block):    
+def fix_bordel_with_list_and_dict(sub_list_of_json_block):  
+    '''
+    TODO
+    '''  
     len_sub=len(sub_list_of_json_block)
     d4=dict(sub_list_of_json_block[0])
     for ii in range (1,len_sub):
@@ -77,7 +96,9 @@ def fix_bordel_with_list_and_dict(sub_list_of_json_block):
     return d5
 
 def read_log_file_and_save_as_json(filename, output_folder):
-    
+    '''
+    TODO
+    '''
     substring='='
     num=0
     num_sub=0
@@ -129,8 +150,10 @@ def read_log_file_and_save_as_json(filename, output_folder):
 
     return list_of_json_block        
 
-
 def get_spacing(list_of_json_block):
+    '''
+    TODO
+    '''
     # fonction pour récupérer le spacing
     spacing=0
     Reconstruction=list_of_json_block[3]
@@ -143,9 +166,10 @@ def get_spacing(list_of_json_block):
            spacing=value
     return spacing  
 
-
 def upload_metadata_from_json(list_of_json_block,acquisitionItemDocument):
-
+    '''
+    TODO
+    '''
     metadata=acquisitionItemDocument['meta']
     # fill all information 
     print('-------------')
@@ -174,20 +198,66 @@ def upload_metadata_from_json(list_of_json_block,acquisitionItemDocument):
                             print(lolo, value)
                             meta_is_ok=Item().setMetadata( acquisitionItemDocument, {lolo:value}, allowNull=True)         
 
-
-
-
 def call_function_rec_conversion(json_dictionary, event):
+    '''
+    TODO
+    '''
     pass
 
 def create_the_directories():
+    '''
+    TODO
+    '''
     pass 
 
 def assert_job_state_is_success(job):
     assert(job.status=="SUCCESS")
 
+    '''
+    TODO
+    '''
+
+def getCollectionBaseParentId(file):
+   '''
+    TODO
+    '''
+   #itemId=file['itemId']
+   item = Item().load(file['itemId'], level=AccessType.WRITE, force=True)   
+   if(item['baseParentType']=='collection'):
+     baseParentId=item['baseParentId']
+     print(baseParentId)
+   else:
+    pass
+    baseParentId='none'
+    #TODO return error  
+   return  baseParentId
+
+def isGirderCollection(dict):  
+    '''
+    TODO
+    '''
+    if (dict['type']=='collection'):
+        #print('isCollection right', dict['object']['name'])
+        pass
+    else:
+        print('isCollection wrong', dict['object']['name'])
+        pass
+
+def isGirderFolder(dict):  
+    '''
+    TODO
+    '''
+    if (dict['type']=='folder'):
+        #print('isCollection right', dict['object']['name'])
+        pass
+    else:
+        print('isCollection wrong', dict['object']['name'])
+        pass
+
 def extract_the_log_information(json_dictionary, event):
-    
+    '''
+    TODO
+    '''
     # function do too many things, it has to be splitted
     # check that the physical folder (where are the data) exists
     # find the log file 
@@ -205,8 +275,9 @@ def extract_the_log_information(json_dictionary, event):
     # else:
     #    pass
       # it should define in the json file
-    
-    folder_json_dictionarybase_uct='/home/bully/Desktop/GirderEcosystem/Girder_MicroCT/'
+
+
+    folder_json_dictionarybase_uct='./PyGirderEnv/Girder_MicroCT/'
     check_folder_exist(folder_json_dictionarybase_uct)
     name_project=json_dictionary['project-date']+'_'+ json_dictionary['project-id']+'_'+ json_dictionary['project-name'];
     name_sample=json_dictionary['sample-date']+'_'+ json_dictionary['sample-id']+'_'+ json_dictionary['sample-name'];   
@@ -277,10 +348,10 @@ def extract_the_log_information(json_dictionary, event):
     assert_job_state_is_success(nii_job)
     assert_job_state_is_success(zarr_job)
     
-    
-
 def read_and_check_that_the_format_of_json_file_is_ok(event):
-
+    '''
+    TODO
+    '''
     print(event.info)
     file = event.info['file']
    
@@ -322,7 +393,9 @@ def read_and_check_that_the_format_of_json_file_is_ok(event):
     #    raise ValueError("Error", json_dictionary['operation']) 
   
 def identify_the_task_to_be_done(event, filename):
-
+    '''
+    TODO
+    '''
     # if the file is a json , that's ok
 
     if ("task" in filename) and ("json" in filename):
@@ -338,7 +411,9 @@ def identify_the_task_to_be_done(event, filename):
         print('####################') 
 
 def _handler_data_process(event):
-
+    '''
+    TODO
+    '''
     ##
     #once a file is upload we gonna do some tasks
     # we will use the name and format of the file to identify the file
@@ -354,9 +429,10 @@ def _handler_data_process(event):
     print(' plugin µct fin du handler ') 
     print('####################')
     
-
-
 def count_images_in_folder(folder_path):
+    '''
+    TODO
+    '''
     img_count = 0
     for _, _, files in os.walk(folder_path, topdown=False):
         for name in files:
@@ -365,8 +441,10 @@ def count_images_in_folder(folder_path):
                 img_count += 1
     return img_count
 
-
 def parse_log_file(folder_path):
+    '''
+    TODO
+    '''
     for filename in os.listdir(folder_path):
         if filename.endswith('.log'):
             log_file_path = os.path.join(folder_path, filename)
@@ -380,8 +458,10 @@ def parse_log_file(folder_path):
         
     return content
 
-
 def json_insertion_scenario(fileId, event):
+    '''
+    TODO
+    '''
     json_file = File().load(fileId, force=True)
     with File().open(json_file) as f:
         json_data = json.load(f)
@@ -396,38 +476,29 @@ def json_insertion_scenario(fileId, event):
         # print(zarr_job)
         extract_the_log_information(json_data,event)
     
-
-
-def read_mail_template(filename):
-    with open(filename, 'r', encoding='utf-8') as template_file:
-        template_file_content = template_file.read()
-    return Template(template_file_content)
-
-
-def mail_sender():
-    print('################# ###')
-    print('mail_sender')
-    print('####################')
-
-    message_template = read_mail_template('mymessage.txt')
-    message = message_template.substitute(PERSON_NAME=getCurrentUser()['firstName'] + " " + getCurrentUser()['lastName'])
-    mail_utils.sendMail(subject='My mail from girder', text=message, to=getCurrentUser()['email'])
-
-def _launchAction(event):
+@app.task(bind=True)
+def _launchAction(self, event):
+    '''
+    Job action launching function.
+    '''
     print('================Lanching the Job===================')   
-    
+
     fileId = event.info['_id']
     if(event.info['mimeType'] == "application/json"):
         print("A json has been inserted \n")
-        json_insertion_scenario(fileId, event)
-        
-        
-    #mail_sender()
+        json_insertion_scenario(fileId, event)        
+    mail_sender()
     print('===================================================')
 
+    self.update_state(state="PROGRESS", meta={'progress': 50})
+    print('================End of the Job===================')   
 
-def read_secrets() -> dict:
-    filename = os.path.join('settings.json')
+@argument('json_filename', types.String, min=1, max=1)
+def read_json_file_as_secret(json_filename) -> dict:
+    '''
+    Reads data corresponding to the given json file as a secret.
+    '''
+    filename = os.path.join(json_filename)
     try:
         with open(filename, mode='r') as f:
             return json.loads(f.read())
@@ -435,16 +506,18 @@ def read_secrets() -> dict:
         return {}
 
 def set_settings():
+    '''
+    Sets SMTP webmail server configuration information.
+    '''
     from girder.models.setting import Setting
     setting = Setting()
     
-    secrets = read_secrets()
+    secrets = read_json_file_as_secret('settings.json')
     setting.set(SettingKey.SMTP_ENCRYPTION, secrets["SMTP_ENCRYPTION"])
     setting.set(SettingKey.SMTP_HOST, secrets["SMTP_HOST"])
     setting.set(SettingKey.SMTP_PASSWORD, secrets["SMTP_PASSWORD"])
     setting.set(SettingKey.SMTP_PORT, secrets["SMTP_PORT"])
     setting.set(SettingKey.SMTP_USERNAME, secrets["SMTP_USERNAME"])
-
 
 class GirderPlugin(plugin.GirderPlugin):  
     DISPLAY_NAME = 'plugin_uct'
@@ -452,18 +525,16 @@ class GirderPlugin(plugin.GirderPlugin):
 
     def load(self, info):
 
-        # add plugin loading logic here
-        #set_settings()
-
         print('####################')
         print(' plugin µct start du handler ') 
         print('####################')
-        # please check the doc
-        # basically the line below trigger the plugin if a file is uploaded
+
+        set_settings()
         
+        # basically the line below trigger the plugin if a file is uploaded
         # be careful for some reasons the data process events cannot send jobs..
         # events.bind('data.process', 'my_first_process', _handler_data_process) 
+        
         # while the events bind model can send jobs
-        events.bind('model.file.save.after', 'lance une action', _launchAction)       
+        events.bind('model.file.save.after', 'lance une action', _launchAction) 
         pass
-
