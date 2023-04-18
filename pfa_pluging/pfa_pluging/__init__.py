@@ -4,7 +4,6 @@ from girder import events
 from girder.models.token import Token
 from girder.api.rest import getCurrentUser
 from gwexample.analyses.tasks import fibonacci
-from pfa_pluging.Tasks.progress import progressTest
 
 from girder.api.rest import (
     getCurrentUser,
@@ -12,12 +11,15 @@ from girder.api.rest import (
 
 #######################
 
-def call_girder_worker_fibonacci(number):
+def call_girder_worker_fibonacci(number, filename, user_fullname, user_email):
    #async_result = fibonacci.delay(  number,  girder_job_title="A Custom Job Title")
     # Create a token with permissions of the current user.
    token = Token().createToken(user=getCurrentUser()) 
    #.apply_async(countdown=60)
-   async_result =fibonacci.delay(number,
+   async_result =fibonacci.delay(number, 
+    filename=filename, 
+    user_fullname=user_fullname, 
+    user_email=user_email,
     girder_job_title='Fibonacci Job Perso with number'+ str(number),
   	girder_job_type='my_fibo_type',
   	girder_job_public=True,
@@ -28,52 +30,26 @@ def call_girder_worker_fibonacci(number):
 
 def _launchAction1(self):
     event=self  
-    
+    filename = event.info['name']
+    user_fullname = getCurrentUser()['firstName'] + " " + getCurrentUser()['lastName']
+    user_email = getCurrentUser()['email']
     #print('coucou, je vais faire laction')
     number =5    
-    call_girder_worker_fibonacci(number)
+    call_girder_worker_fibonacci(number, filename, user_fullname, user_email)
     number =15
-    call_girder_worker_fibonacci(number)
+    call_girder_worker_fibonacci(number, filename, user_fullname, user_email)
     number =25
-    call_girder_worker_fibonacci(number)
+    call_girder_worker_fibonacci(number, filename, user_fullname, user_email)
     number =26
-    call_girder_worker_fibonacci(number)
+    call_girder_worker_fibonacci(number, filename, user_fullname, user_email)
     number =27
-    call_girder_worker_fibonacci(number)
+    call_girder_worker_fibonacci(number, filename, user_fullname, user_email)
     number =28
-    call_girder_worker_fibonacci(number)
+    call_girder_worker_fibonacci(number, filename, user_fullname, user_email)
     number =29
-    call_girder_worker_fibonacci(number)
+    call_girder_worker_fibonacci(number, filename, user_fullname, user_email)
     number =30
-    call_girder_worker_fibonacci(number)
-
-def call_girder_worker_progress(number):
-   #async_result = fibonacci.delay(  number,  girder_job_title="A Custom Job Title")
-    # Create a token with permissions of the current user.
-   token = Token().createToken(user=getCurrentUser())
-   #.apply_async(countdown=60)
-   async_result = progressTest.delay( number, girder_job_title='Progress Job Perso with number'+ str(number),
-          girder_job_type='my_progress_type',
-          girder_job_public=True,
-    girder_client_token=token['_id']
-        )  
-
-def _launchAction2(self):
-    print("############################################################")
-    event=self
-    number =5    
-    job=call_girder_worker_progress(number)
-    print(job)
-    number =10    
-    job=call_girder_worker_progress(number)
-    print(job)
-    number =15    
-    job=call_girder_worker_progress(number)
-    print(job)
-    number =20    
-    job=call_girder_worker_progress(number)
-    print(job)
-
+    call_girder_worker_fibonacci(number, filename, user_fullname, user_email)
 
 class GirderPlugin(plugin.GirderPlugin):
     DISPLAY_NAME = 'projet_pfa'

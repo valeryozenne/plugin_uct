@@ -38,11 +38,11 @@ def mail_sender(job_name, start_hour, processed_file, user_fullname, user_email,
     - the user email;
     - the corresponding mail template.
     '''
-    print('####################')
-    print('mail_sender')
-    print('####################')
-
+    
     if user_email is not None and mail_utils.validateEmailAddress(user_email):
+        print('####################')
+        print('mail_sender')
+        print('####################')
         message_template = read_mail_template(template_name)
         message = message_template.substitute(PERSON_NAME=user_fullname, JOB_NAME=job_name, START_HOUR=start_hour, PROCESSED_FILE=processed_file)
         mail_utils.sendMail(subject='My mail from girder', text=message, to=user_email)
@@ -51,42 +51,42 @@ def mail_sender(job_name, start_hour, processed_file, user_fullname, user_email,
 
 def get_mail_template(status):
   if (status == JobStatus.SUCCESS):
-    return "success_template"
+    return "success_template.txt"
   elif (status == JobStatus.ERROR):
-    return "error_template"
-  elif (status == JobStatus.CANCELED):
-    return "canceled_template" 
+    return "error_template.txt"
+  elif (status == JobStatus.CANCELED):  
+    return "canceled_template.txt" 
   else:
-     return "default_template"
+     return "default_template.txt"
 
 def validate_job_status(event):
     event_job = event.info['job']
-    if event_job['progress'] and event_job['progress']['total']:
-      current_progress = event_job['progress']['current']
+    current_status = event_job['status']
+    args = event_job['kwargs']
 
-      print("this is the progress:", current_progress)
+    print("this is the progress:", current_status)
 
-      if (current_progress == 1234):
-          event.preventDefault().addResponse(True)
-          print('event.info == 1234')
+    if (current_status == 1234):
+        event.preventDefault().addResponse(True)
+        print('event.info == 1234')
 
-      if (current_progress == JobStatus.INACTIVE):
-        print('event.info == INACTIVE (0)')
-      elif (current_progress == JobStatus.QUEUED):
-        print('event.info == QUEUED (1)')   
-      elif (current_progress == JobStatus.RUNNING):
-        print('event.info == RUNNING (2) ')
-      elif (current_progress == JobStatus.SUCCESS or current_progress == JobStatus.ERROR or current_progress == JobStatus.CANCELED):
-        job_name = event_job['title']
-        created_at = event_job['created'].strftime("%H:%M:%S")
-        filename = event_job['filename']
-        user_fullname = event_job['userFullname']
-        user_email = event_job['userEmail']
-        mail_template = get_mail_template(current_progress)
+    if (current_status == JobStatus.INACTIVE):
+      print('event.info == INACTIVE (0)')
+    elif (current_status == JobStatus.QUEUED):
+      print('event.info == QUEUED (1)')   
+    elif (current_status == JobStatus.RUNNING):
+      print('event.info == RUNNING (2) ')
+    elif (current_status == JobStatus.SUCCESS or current_status == JobStatus.ERROR or current_status == JobStatus.CANCELED):
+      job_name = event_job['title']
+      created_at = event_job['created'].strftime("%H:%M:%S")
+      filename = args['filename']
+      user_fullname = args['user_fullname']
+      user_email = args['user_email']
+      mail_template = get_mail_template(current_status)
 
-        mail_sender(job_name, created_at, filename, user_fullname, user_email, mail_template)
-      else:
-          print('event.info == X')   
+      mail_sender(job_name, created_at, filename, user_fullname, user_email, mail_template)
+    else:
+        print('event.info == X')   
 
 
 class GirderPlugin(plugin.GirderPlugin):
