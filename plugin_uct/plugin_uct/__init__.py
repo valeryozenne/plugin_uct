@@ -29,6 +29,7 @@ from girder.api.rest import Resource
 from girder.models.assetstore import Assetstore
 
 from girder_worker.app import app
+from girder_worker.utils import JobManager
 from girder_jobs import Job
 from girder_client import GirderClient
 from girder_jobs.constants import JobStatus
@@ -210,10 +211,11 @@ def create_the_directories():
     pass 
 
 def assert_job_state_is_success(job):
+    assert(job.status=="SUCCESS")
+
     '''
     TODO
     '''
-    assert(job['status']==JobStatus.SUCCESS)
 
 def getCollectionBaseParentId(file):
    '''
@@ -274,6 +276,7 @@ def extract_the_log_information(json_dictionary, event):
     #    pass
       # it should define in the json file
 
+
     folder_json_dictionarybase_uct='./PyGirderEnv/Girder_MicroCT/'
     check_folder_exist(folder_json_dictionarybase_uct)
     name_project=json_dictionary['project-date']+'_'+ json_dictionary['project-id']+'_'+ json_dictionary['project-name'];
@@ -293,15 +296,15 @@ def extract_the_log_information(json_dictionary, event):
     check_folder_exist_or_create_it(folder_3_Zarr_Conversion)
 
     # this should be define somewhere
-    collection_id='6409fce970e7d5b71f865472'   
+    collection_id='63ff9ae424d9b732fe930362'   
     collectionDocument = Collection().load(collection_id, level=AccessType.WRITE,force=True)
-    
     creatorId=event.info['creatorId']
     creator = {'_id':creatorId}
     # print(creator)
+    
     projectFolderDocument = Folder().createFolder( collectionDocument, name_project, parentType='collection',reuseExisting=True, public=True, creator=None )
     sampleFolderDocument = Folder().createFolder( projectFolderDocument, name_sample, parentType='folder',reuseExisting=True, public=True, creator=None )
-    
+   
     # on n'est pas obligé de créer un item
     # on peut mettre les metadata dans le dossier
     acquisitionItemDocument = Item().createItem(name='log_from_rec_'+bruker_name, creator=creator, folder=sampleFolderDocument, reuseExisting=True)
@@ -340,11 +343,8 @@ def extract_the_log_information(json_dictionary, event):
     else:   
       print("Error extension tri vaut ", tri[-1])   
       raise ValueError("Error extension tri vaut ", tri[-1])
-
     nii_job = call_girder_worker_convert_images_to_nii(folder_1_Rec_Data, folder_2_Nii_Conversion,bruker_name, extension)
     zarr_job = call_girder_worker_convert_images_to_zarr(folder_1_Rec_Data, folder_3_Zarr_Conversion,bruker_name, extension)
-
-    
     assert_job_state_is_success(nii_job)
     assert_job_state_is_success(zarr_job)
     
@@ -486,8 +486,9 @@ def _launchAction(self, event):
     fileId = event.info['_id']
     if(event.info['mimeType'] == "application/json"):
         print("A json has been inserted \n")
-        json_insertion_scenario(fileId, event)
-        
+        json_insertion_scenario(fileId, event)        
+    print('===================================================')
+
     self.update_state(state="PROGRESS", meta={'progress': 50})
     print('================End of the Job===================')   
 
@@ -522,6 +523,7 @@ class GirderPlugin(plugin.GirderPlugin):
     CLIENT_SOURCE_PATH = 'web_client'
 
     def load(self, info):
+
         print('####################')
         print(' plugin µct start du handler ') 
         print('####################')
@@ -533,5 +535,5 @@ class GirderPlugin(plugin.GirderPlugin):
         # events.bind('data.process', 'my_first_process', _handler_data_process) 
         
         # while the events bind model can send jobs
-        events.bind('model.file.save.after', 'lance une action', _launchAction) 
+        # events.bind('model.file.save.after', 'lance une action', _launchAction) 
         pass
