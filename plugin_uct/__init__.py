@@ -219,6 +219,20 @@ def extract_the_log_information(json_dictionary, event):
     projectFolderDocument = Folder().createFolder( collectionDocument, name_project, parentType='collection',reuseExisting=True, public=True, creator=creator )
     sampleFolderDocument = Folder().createFolder( projectFolderDocument, name_sample, parentType='folder',reuseExisting=True, public=True, creator=creator )
     
+    sampleFolderDocument = Folder().createFolder( projectFolderDocument, 'titi', parentType='folder',reuseExisting=True, public=True, creator=creator )
+    
+    subFolderDocument = Folder().createFolder( sampleFolderDocument, 'tutu', parentType='folder',reuseExisting=True, public=True, creator=creator )
+    
+    acquisitionItemDocument = Item().createItem(name='log_titi', creator=creator, folder=sampleFolderDocument, reuseExisting=True)
+    
+    subacquisitionItemDocument = Item().createItem(name='log_titi', creator=creator, folder=subFolderDocument, reuseExisting=True)
+    
+    #id_item='6400cdc11430421cf8e56840'
+
+    #item_dict = Item().load(id_item, level=AccessType.WRITE, force=True)
+
+    meta_is_ok=Item().setMetadata( subacquisitionItemDocument, {"lolo":"47"}, allowNull=True)
+
     # on n'est pas obligé de créer un item
     # on peut mettre les metadata dans le dossier
     acquisitionItemDocument = Item().createItem(name='log_from_rec_'+bruker_name, creator=creator, folder=sampleFolderDocument, reuseExisting=True)
@@ -353,7 +367,7 @@ class GirderPlugin(plugin.GirderPlugin):
         # basically the line below trigger the plugin if a file is uploaded
         
         # be careful for some reasons the data process events cannot send jobs..
-        events.bind('data.process', 'my_first_process', _handler_data_process) 
+        # events.bind('data.process', 'my_first_process', _handler_data_process) 
         # while the events bind model can send jobs
         # events.bind('model.file.save.after', 'lance une action', _handler)       
         pass
