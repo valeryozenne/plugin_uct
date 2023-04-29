@@ -1,0 +1,67 @@
+{
+    "name": "@girder/newroutes",
+    "version": "0.1.0",
+    "private": true,
+    "description": "An example Girder plugin.",
+    "homepage": "https://github.com/girder/newroutes",
+    "license": "Apache-2.0",
+    "peerDependencies": {
+        "@girder/core": "*"
+    },
+    "girderPlugin": {
+        "name": "newroutes",
+        "main": "./main.js",
+        "webpack": "webpack.helper.js"
+    },
+    "bugs": {
+        "url": "https://github.com/girder/girder/issues"
+    },
+    "scripts": {
+        "lint": "eslint . && pug-lint . && stylint"
+    },
+    "devDependencies": {
+        "@girder/eslint-config": "*",
+        "@girder/pug-lint-config": "*",
+        "eslint": "^5",
+        "eslint-config-semistandard": "^13",
+        "eslint-config-standard": "^12",
+        "eslint-plugin-backbone": "*",
+        "eslint-plugin-import": "*",
+        "eslint-plugin-node": "*",
+        "eslint-plugin-promise": "*",
+        "eslint-plugin-standard": "*",
+        "pug-lint": "^2",
+        "stylint": "^2"
+    },
+    "eslintConfig": {
+        "extends": "@girder",
+        "root": true
+    },
+    "pugLintConfig": {
+        "extends": "@girder/pug-lint-config"
+    },
+    "dependencies": {
+        "@girder/core": "^3.1.17",
+        "girder": "^2.5.0"
+    },
+    "compilerOptions": {
+        "esModuleInterop": true,
+        "allowSyntheticDefaultImports": true,
+        "target": "es5",
+        "module": "commonjs",
+        "strict": true,
+        "noImplicitAny": true,
+        "strictNullChecks": true,
+        "strictFunctionTypes": true,
+        "strictPropertyInitialization": true,
+        "noImplicitThis": true,
+        "alwaysStrict": true,
+        "moduleResolution": "node"
+      },
+      "include": [
+        "girder_typings.d.ts"
+      ],
+      "exclude": [
+        "node_modules"
+      ]
+}

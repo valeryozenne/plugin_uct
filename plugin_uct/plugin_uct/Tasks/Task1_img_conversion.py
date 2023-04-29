@@ -11,6 +11,11 @@ from girder_jobs.models.job import Job
 from girder.constants import AccessType, TokenScope
 from girder_jobs import Job
 from girder_jobs.constants import JobStatus
+from girder.models.token import Token
+from girder.api.rest import getCurrentUser
+from celery.result import AsyncResult
+from girder_worker.task import Task
+import requests
 
 
 # @app.task
@@ -65,23 +70,20 @@ from girder_jobs.constants import JobStatus
 
 
 
+#job_manager = app.job_manager
 
 
-@app.task
-def task1_convert_rec_to_nii(job,input_dir, output_dir, bruker_name, extension):
-    
+@app.task(bind=True)
+def task1_convert_rec_to_nii(self,input_dir, output_dir, bruker_name, extension):
+    self.job_manager.updateProgress(total=10, current=0)
+
     print('Starting the job')
-    
-    job = Job().updateJob(
-            job, log='Started Nii conversion\n',
-            status=JobStatus.RUNNING,
-            progressCurrent=0,
-            progressTotal=100
-        )
-    
+    self.job_manager.updateProgress(total=10, current=1)
+
     file_pattern = os.path.join(input_dir, bruker_name + '__rec0000????' + extension)
     file_list = glob.glob(file_pattern, recursive=False)
     print(f'Found {len(file_list)} files matching pattern {file_pattern}')
+    self.job_manager.updateProgress(total=10, current=2)
 
     # Check for truncated files and replace them with the previous file
     num_truncated_files = 0
@@ -99,6 +101,7 @@ def task1_convert_rec_to_nii(job,input_dir, output_dir, bruker_name, extension):
 
     if num_truncated_files > 0:
         print(f"Detected {num_truncated_files} truncated files")
+    self.job_manager.updateProgress(total=10, current=5)
 
     # Load images and concatenate them into a 3D array
     t = time.time()
@@ -107,14 +110,7 @@ def task1_convert_rec_to_nii(job,input_dir, output_dir, bruker_name, extension):
     elapsed = time.time() - t
     print(f"Loaded {len(im_collection)} files in {elapsed:.2f} seconds")
     
-    # Update progress and status
-    job = Job().updateJob(
-            job, log=f'Loaded {len(im_collection)} files in {elapsed:.2f} seconds\n',
-            status=JobStatus.RUNNING,
-            progressCurrent=20,
-            progressTotal=100
-        )
-
+    self.job_manager.updateProgress(total=10, current=8)
     # Create NIfTI image and save to disk
     try:
         t = time.time()
@@ -126,37 +122,25 @@ def task1_convert_rec_to_nii(job,input_dir, output_dir, bruker_name, extension):
     except Exception as e:
         print(f"Error saving NIfTI image: {e}")
         status = JobStatus.ERROR
-
+    self.job_manager.updateProgress(total=10, current=9)
     print('Ending the job')
-    job = Job().updateJob(
-            job, log='Finished Nii conversion\n',
-            status=status,
-            progressCurrent=100,
-            progressTotal=100
-        )
-    return job
+    return None
 
 
-@app.task
-def convert_rec_to_zarr(job, input_dir, output_dir, bruker_name, extension):
+@app.task(bind=True)
+def convert_rec_to_zarr(self, input_dir, output_dir, bruker_name, extension):
+
+    self.job_manager.updateProgress(total=10, current=0)
     print('Starting the job')
-    
-    # Update job status to RUNNING
-    job = Job().updateJob(
-        job,
-        log='Started Zarr conversion\n',
-        status=JobStatus.RUNNING,
-        progressCurrent=0,
-        progressTotal=100
-    )
-
     print(f'Searching for files in {input_dir}/{bruker_name}__rec0000????{extension}')
     
+    self.job_manager.updateProgress(total=10, current=2)
     # Find all image files
     file_pattern = os.path.join(input_dir, f'{bruker_name}__rec0000????{extension}')
     image_files = sorted(glob.glob(file_pattern))
     print(f'Found {len(image_files)} files')
 
+    self.job_manager.updateProgress(total=10, current=4)
     # Check if image is truncated, if so use the previous image
     num_truncated_files = 0
     for i in range(len(image_files)):
@@ -171,17 +155,10 @@ def convert_rec_to_zarr(job, input_dir, output_dir, bruker_name, extension):
                 num_truncated_files += 1
                 print(f'Attention: using the same image twice. File {i} is truncated.')
             else:
-                # Update job status to ERROR if the first file is truncated
-                job = Job().updateJob(
-                    job,
-                    log=f'Error: The first file {image_path} is truncated.\n',
-                    status=JobStatus.ERROR,
-                    progressCurrent=0,
-                    progressTotal=100
-                )
-                return job
+                return None
     print(f'Found {num_truncated_files} truncated files')
 
+    self.job_manager.updateProgress(total=10, current=6)
     # Concatenate images
     t_start = time.time()
     print('Concatenating images')
@@ -189,73 +166,43 @@ def convert_rec_to_zarr(job, input_dir, output_dir, bruker_name, extension):
     image_3d = image_collection.concatenate()
     elapsed_time = time.time() - t_start
     print(f'Finished concatenating images in {elapsed_time:.2f}s')
-    
-    # Update progress to 40%
-    job = Job().updateJob(
-        job,
-        log='40% of the job completed.\n',
-        status=JobStatus.RUNNING,
-        progressCurrent=40,
-        progressTotal=100
-    )
-
-    # Save as .zarr
     t_start = time.time()
     print(f'Saving .zarr file to {output_dir}')
     os.makedirs(output_dir, exist_ok=True)
     try:
         zarr.save(output_dir, image_3d)
     except Exception as e:
-        # Update job status to ERROR if there is an error while saving
-        job = Job().updateJob(
-            job,
-            log=f'Error: {str(e)}\n',
-            status=JobStatus.ERROR,
-            progressCurrent=0,
-            progressTotal=100
-        )
-        return job
+        return None
+    
     elapsed_time = time.time() - t_start
     print(f'Finished saving .zarr file in {elapsed_time:.2f}s')
-
-    # Update progress to 100%
-    job = Job().updateJob(
-        job,
-        log='Finished Zarr Conversion\n',
-        status=JobStatus.SUCCESS,
-        progressCurrent=100,
-        progressTotal=100
-    )
-    
-    return job
+    self.job_manager.updateProgress(total=10, current=9)
+    return None
 
 def call_girder_worker_convert_images_to_zarr(input_dir,output_dir,bruker_name,extension):
-    
-    zarr_job = Job().createLocalJob(
-                module='plugin_uct.Tasks',
-                function='task1_convert_rec_to_zarr',
-                title='Convert Rec to zarr',
-                type='conversion',
-                public=False,
-                asynchronous=True
-            )
-    zarr_job = convert_rec_to_zarr(zarr_job,input_dir,output_dir,bruker_name,extension)
+    task_result = convert_rec_to_zarr.apply_async(args=(input_dir, output_dir, bruker_name, extension),kwargs={},
+	girder_job_title='Convert Images to zarr', countdown = 4)
+    while not task_result.ready():
+        time.sleep(5)
 
-    return zarr_job
+    if task_result.successful():
+        print("Task completed successfully!")
+    else:
+        print("Task failed.")
+    return task_result.successful() 
 
 
 
-def call_girder_worker_convert_images_to_nii(input_dir,output_dir,bruker_name,extension):
+def call_girder_worker_convert_images_to_nii(input_dir,output_dir,bruker_name,extension): 
 
-    nii_job = Job().createLocalJob(
-            module='plugin_uct.Tasks',
-            function='convert_rec_to_nii',
-            title='Convert Rec to Nii',
-            type='conversion',
-            public=False,
-            asynchronous=True
-        )
-    
-    nii_job = task1_convert_rec_to_nii(nii_job,input_dir,output_dir,bruker_name,extension)
-   
-    return nii_job
+    task_result = task1_convert_rec_to_nii.apply_async(args=(input_dir, output_dir, bruker_name, extension),kwargs={},
+	girder_job_title='Convert Images to nii', countdown=3)
+
+    while not task_result.ready():
+        time.sleep(5)
+
+    if task_result.successful():
+        print("Task completed successfully!")
+    else:
+        print("Task failed.")
+    return task_result.successful()
