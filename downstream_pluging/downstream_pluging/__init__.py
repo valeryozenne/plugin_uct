@@ -6,13 +6,7 @@ from girder_worker_utils.decorators import argument
 from girder_worker_utils import types
 from string import Template
 from girder.utility import mail_utils
-from girder.models.user import User
 from girder.settings import SettingKey
-
-import girder.api.v1.user as user_api
-from girder.models.user import User
-from girder.exceptions import RestException
-
 
 import os
 import json
@@ -55,6 +49,9 @@ def mail_sender(job_name, start_hour, processed_file, user_fullname, user_email,
         print("send_mail_error")
 
 def get_mail_template(status):
+  '''
+  Returns mail template corresponding to the given status.
+  '''
   if (status == JobStatus.SUCCESS):
     return "success_template.txt"
   elif (status == JobStatus.ERROR):
@@ -65,6 +62,10 @@ def get_mail_template(status):
      return "default_template.txt"
 
 def validate_job_status(event):
+    '''
+    Retrieves and handles job status actions.
+    '''
+
     event_job = event.info['job']
     current_status = event_job['status']
     args = event_job['kwargs']
@@ -92,7 +93,6 @@ def validate_job_status(event):
       mail_sender(job_name, created_at, filename, user_fullname, user_email, mail_template)
     else:
         print('event.info == X')   
-
 
 @argument('json_filename', types.String, min=1, max=1)
 def read_json_file_as_secret(json_filename) -> dict:
@@ -127,12 +127,10 @@ class GirderPlugin(plugin.GirderPlugin):
     # downstream plugin
     def load(self, info):
         set_settings()
-        # add plugin loading logic here
-        #print('on passe dans le plugin RMSBPlugin pour importer la tache')
-        print("########################################################")
-        #events.bind('model.file.save.after', 'create_docker_job', _launchDockerJob)
-        # events.bind('jobs.status.validate', 'my_plugin', validateJobStatus)
+        print('####################')
+        print(' plugin downstream start du handler ') 
+        print('####################')
+
         events.bind('jobs.job.update.after', "update after", validate_job_status)
-        # events.bind('jobs.job.update', "update", validateJobStatus)
         pass
     

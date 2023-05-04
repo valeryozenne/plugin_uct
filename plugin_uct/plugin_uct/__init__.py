@@ -1,80 +1,75 @@
 from girder import plugin
 from girder import events
 
-## girder model import
+## Girder model import.
+
+# NOT USED
 from girder.api import access
-from girder.api.describe import Description, describeRoute
 from girder.api.rest import Resource, RestException, loadmodel
-from girder.constants import AccessType, TokenScope
 from girder.plugin import getPlugin, GirderPlugin
-from girder.models.item import Item
 from girder.models.user import User
-from girder.models.file import File
 from girder.models.group import Group
 from girder.models.model_base import Model
 from girder.models.upload import Upload
-from girder.models.folder import Folder 
-from girder.models.collection import Collection
 from girder.models.token import Token
-from girder import events
-from girder.api import access
-from girder.utility import mail_utils
-
 from girder.utility.progress import ProgressContext
-from girder.settings import SettingKey
-from girder.constants import AccessType, TokenScope
-from girder.api.rest import boundHandler, getCurrentUser
-from girder.api.describe import Description, autoDescribeRoute
-from girder.api.rest import Resource
+from girder.api.describe import Description, autoDescribeRoute, describeRoute
 from girder.models.assetstore import Assetstore
-
-from girder_worker.app import app
 from girder_worker.utils import JobManager
 from girder_jobs import Job
 from girder_client import GirderClient
 from girder_jobs.constants import JobStatus
-from plugin_uct.Tasks.Task1_img_conversion import call_girder_worker_convert_images_to_zarr,call_girder_worker_convert_images_to_nii
+from girder_worker_utils import types
+from girder.constants import TokenScope
+from girder.api.rest import boundHandler, getCurrentUser
+from girder_worker_utils.decorators import argument
 
-## other import related to standard python
+# USED
+from girder.constants import AccessType
+from girder.models.item import Item
+from girder.models.file import File
+from girder.models.folder import Folder 
+from girder.models.collection import Collection
+from girder import events
+from girder_worker.app import app
+
+## Custom import.
+from plugin_uct.Tasks.Task1_img_conversion import call_girder_worker_convert_images_to_zarr, call_girder_worker_convert_images_to_nii
+
+## Other import related to standard python.
 import json
 import os
 import glob
 import numpy as np
-from string import Template
-
-from girder_worker_utils.decorators import argument
-from girder_worker_utils import types
 
 #######################
 
-# list of function that should be moved in other python_file.py for clearity
-
 def check_file_exist(file):
-   '''
-    TODO
     '''
-   if not (os.path.isfile(file)):
-    print('file ',file,' doesn t exist')   
-    raise ValueError("Error folder", file)
+    Raises an error if the given file does not exist.
+    '''
+    if not (os.path.isfile(file)):
+        print('file ',file,' doesn t exist')   
+        raise ValueError("Error folder", file)
     
 def check_folder_exist(folder):
-   '''
-    TODO
     '''
-   if not (os.path.isdir(folder)):
-    print('folder ',folder,' doesn t exist')   
-    raise ValueError("Error folder", folder)
-    
-def check_folder_exist_or_create_it(folder):
-   '''
-    TODO
+    Raises an error if the given folder does not exist.
     '''
-   if not (os.path.isdir(folder)):
-      os.mkdir(folder)
+    if not (os.path.isdir(folder)):
+        print('folder ',folder,' doesn t exist')   
+        raise ValueError("Error folder", folder)
+        
+def create_folder(folder):
+    '''
+    Creates the given folder if it does not exist.
+    '''
+    if not (os.path.isdir(folder)):
+        os.mkdir(folder)
     
 def is_json_key_present(json, key):
     '''
-    TODO
+    Returns True if key is present, otherwise an exception is raised up.
     '''
     try:
         buf = json[key]
@@ -86,12 +81,12 @@ def fix_bordel_with_list_and_dict(sub_list_of_json_block):
     '''
     TODO
     '''  
-    len_sub=len(sub_list_of_json_block)
-    d4=dict(sub_list_of_json_block[0])
+    len_sub = len(sub_list_of_json_block)
+    d4 = dict(sub_list_of_json_block[0])
     for ii in range (1,len_sub):
       d4.update(sub_list_of_json_block[ii])  
   
-    d5=[]
+    d5 = []
     d5.append(d4)  
     return d5
 
@@ -99,11 +94,11 @@ def read_log_file_and_save_as_json(filename, output_folder):
     '''
     TODO
     '''
-    substring='='
-    num=0
-    num_sub=0
-    list_of_json_block=[]
-    list_of_json_name=[]
+    substring = '='
+    num = 0
+    num_sub = 0
+    list_of_json_block = []
+    list_of_json_name = []
 
     with open(filename, 'r') as infile:
 
@@ -112,8 +107,8 @@ def read_log_file_and_save_as_json(filename, output_folder):
         for line in infile:
 
             # Add the line to our JSON block
-            num+=1
-            line=line.rstrip("\n")
+            num += 1
+            line = line.rstrip("\n")
         
             if substring in line:
                 #print("Found!")
@@ -131,19 +126,19 @@ def read_log_file_and_save_as_json(filename, output_folder):
                 #print(line)
                 #print(num,num_sub)
                 json_block = [] 
-                name=line[1:len(line)-1]
+                name = line[1:len(line)-1]
                 list_of_json_name.append(name)
                 list_of_json_block.append(json_block)
-                num_sub+=1        
+                num_sub += 1        
 
     # fix issue with dict and list
 
         for jj in range(0,num_sub):
-          d5=fix_bordel_with_list_and_dict(list_of_json_block[jj])
-          new_data= {list_of_json_name[jj]: d5 }
+          d5 = fix_bordel_with_list_and_dict(list_of_json_block[jj])
+          new_data = {list_of_json_name[jj]: d5 }
           #print(json.dumps(new_data, sort_keys=True, indent=4))
-          filename_out='uCT_'+list_of_json_name[jj]+'.json'
-          filename_out=filename_out.replace(" ", "_")
+          filename_out = 'uCT_'+list_of_json_name[jj]+'.json'
+          filename_out = filename_out.replace(" ", "_")
           print(output_folder+'/'+filename_out)
           with open(output_folder+'/'+filename_out, "w") as file:
             json.dump(new_data, file)
@@ -166,93 +161,33 @@ def get_spacing(list_of_json_block):
            spacing=value
     return spacing  
 
-def upload_metadata_from_json(list_of_json_block,acquisitionItemDocument):
+def upload_metadata_from_json(list_of_json_block, acquisitionItemDocument):
     '''
-    TODO
+    Adds metadata 
     '''
-    metadata=acquisitionItemDocument['meta']
+    metadata = acquisitionItemDocument['meta']
     # fill all information 
     print('-------------')
-    for tt in range(0,len(list_of_json_block)):
-        #print(tt)
-        lala=list_of_json_block[tt]
+    for tt in range(0, len(list_of_json_block)):
+        lala = list_of_json_block[tt]
+
         for ll in range(0,len(lala)):  
-          mini_dict=lala[ll]
-          pairs = mini_dict.items()
-          for key, value in pairs: 
+            mini_dict = lala[ll]
+            pairs = mini_dict.items()
+            for key, value in pairs: 
                 if ('.' in key):
-                        pass
+                    pass
                 else:
                     lolo = key.replace(".", "-")
 
                 if key in metadata:
-                        pass
-                        #print("baah")
-                        #print(lolo, value)
+                    pass
                 else:
-                        #print("boo")
-                        #print(lolo, value)
-                        if ('.' in lolo):
-                            pass
-                        else:
-                            print(lolo, value)
-                            meta_is_ok=Item().setMetadata( acquisitionItemDocument, {lolo:value}, allowNull=True)         
-
-def call_function_rec_conversion(json_dictionary, event):
-    '''
-    TODO
-    '''
-    pass
-
-def create_the_directories():
-    '''
-    TODO
-    '''
-    pass 
-
-def assert_job_state_is_success(job):
-    assert(job.status=="SUCCESS")
-
-    '''
-    TODO
-    '''
-
-def getCollectionBaseParentId(file):
-   '''
-    TODO
-    '''
-   #itemId=file['itemId']
-   item = Item().load(file['itemId'], level=AccessType.WRITE, force=True)   
-   if(item['baseParentType']=='collection'):
-     baseParentId=item['baseParentId']
-     print(baseParentId)
-   else:
-    pass
-    baseParentId='none'
-    #TODO return error  
-   return  baseParentId
-
-def isGirderCollection(dict):  
-    '''
-    TODO
-    '''
-    if (dict['type']=='collection'):
-        #print('isCollection right', dict['object']['name'])
-        pass
-    else:
-        print('isCollection wrong', dict['object']['name'])
-        pass
-
-def isGirderFolder(dict):  
-    '''
-    TODO
-    '''
-    if (dict['type']=='folder'):
-        #print('isCollection right', dict['object']['name'])
-        pass
-    else:
-        print('isCollection wrong', dict['object']['name'])
-        pass
+                    if ('.' in lolo):
+                        pass
+                    else:
+                        print(lolo, value)
+                        meta_is_ok=Item().setMetadata( acquisitionItemDocument, {lolo:value}, allowNull=True)         
 
 def extract_the_log_information(json_dictionary, event):
     '''
@@ -276,29 +211,32 @@ def extract_the_log_information(json_dictionary, event):
     #    pass
       # it should define in the json file
 
+    filename = event.info['name']
+    user_fullname = getCurrentUser()['firstName'] + " " + getCurrentUser()['lastName']
+    user_email = getCurrentUser()['email']
 
-    folder_json_dictionarybase_uct='./PyGirderEnv/Girder_MicroCT/'
+    folder_json_dictionarybase_uct = './PyGirderEnv/Girder_MicroCT/'
     check_folder_exist(folder_json_dictionarybase_uct)
-    name_project=json_dictionary['project-date']+'_'+ json_dictionary['project-id']+'_'+ json_dictionary['project-name'];
-    name_sample=json_dictionary['sample-date']+'_'+ json_dictionary['sample-id']+'_'+ json_dictionary['sample-name'];   
-    bruker_name=json_dictionary['bruker-name']
+    name_project = json_dictionary['project-date']+'_'+ json_dictionary['project-id']+'_'+ json_dictionary['project-name'];
+    name_sample = json_dictionary['sample-date']+'_'+ json_dictionary['sample-id']+'_'+ json_dictionary['sample-name'];   
+    bruker_name = json_dictionary['bruker-name']
 
-    folder_project=folder_json_dictionarybase_uct+name_project
-    folder_sample= folder_json_dictionarybase_uct+name_project+"/"+name_sample
-    folder_1_Rec_Data= folder_sample + '/1_Rec_Data'
+    folder_project = folder_json_dictionarybase_uct+name_project
+    folder_sample = folder_json_dictionarybase_uct+name_project+"/"+name_sample
+    folder_1_Rec_Data = folder_sample + '/1_Rec_Data'
     folder_2_Nii_Conversion= folder_sample + '/Task1_Nii_Conversion'
     folder_3_Zarr_Conversion = folder_sample +'/Task1_Zarr_Conversion'
     
     check_folder_exist(folder_project)
     check_folder_exist(folder_sample)  
     check_folder_exist(folder_1_Rec_Data)
-    check_folder_exist_or_create_it(folder_2_Nii_Conversion)
-    check_folder_exist_or_create_it(folder_3_Zarr_Conversion)
+    create_folder(folder_2_Nii_Conversion)
+    create_folder(folder_3_Zarr_Conversion)
 
     # this should be define somewhere
-    collection_id='63ff9ae424d9b732fe930362'   
+    collection_id = '63ff9ae424d9b732fe930362'
     collectionDocument = Collection().load(collection_id, level=AccessType.WRITE,force=True)
-    creatorId=event.info['creatorId']
+    creatorId = event.info['creatorId']
     creator = {'_id':creatorId}
     # print(creator)
     
@@ -310,128 +248,45 @@ def extract_the_log_information(json_dictionary, event):
     acquisitionItemDocument = Item().createItem(name='log_from_rec_'+bruker_name, creator=creator, folder=sampleFolderDocument, reuseExisting=True)
     
     #print(json_dictionary)
-    log_file=folder_1_Rec_Data+'/'+bruker_name+'__rec.log'
+    log_file = folder_1_Rec_Data+'/'+bruker_name+'__rec.log'
     check_file_exist(log_file)
-    list_of_json_block=read_log_file_and_save_as_json(log_file, folder_1_Rec_Data)
-    spacing=get_spacing(list_of_json_block)  
+    list_of_json_block = read_log_file_and_save_as_json(log_file, folder_1_Rec_Data)
+    spacing = get_spacing(list_of_json_block)  
    
-    upload_metadata_from_json(list_of_json_block,acquisitionItemDocument) 
+    upload_metadata_from_json(list_of_json_block, acquisitionItemDocument) 
 
     myListOfExtension=[]
 
-    liste_bmp=glob.glob(folder_1_Rec_Data+'/'+ bruker_name +'__rec0000????.bmp')
+    liste_bmp = glob.glob(folder_1_Rec_Data+'/'+ bruker_name +'__rec0000????.bmp')
     print(len(liste_bmp))
     myListOfExtension.append(len(liste_bmp))
-    liste_tif=glob.glob(folder_1_Rec_Data+'/'+ bruker_name +'__rec0000????.tif')
+    liste_tif = glob.glob(folder_1_Rec_Data+'/'+ bruker_name +'__rec0000????.tif')
     print(len(liste_tif))
     myListOfExtension.append(len(liste_tif))
-    liste_png=glob.glob(folder_1_Rec_Data+'/'+ bruker_name +'__rec0000????.png')
+    liste_png = glob.glob(folder_1_Rec_Data+'/'+ bruker_name +'__rec0000????.png')
     print(len(liste_png))
     myListOfExtension.append(len(liste_png))
     
     arr = np.array([len(liste_bmp), len(liste_tif), len(liste_png)])
-    tri=np.argsort(arr)
-    if (tri[-1]==2):
+    tri = np.argsort(arr)
+    if (tri[-1] == 2):
        extension='.png' 
        print('extension is png')  
-    elif(tri[-1]==1):
-        extension='.tif'
+    elif(tri[-1] == 1):
+        extension ='.tif'
         print('extension is tiff')  
-    elif(tri[-1]==0):
-        extension='.bmp'
+    elif(tri[-1] == 0):
+        extension = '.bmp'
         print('extension is bmp')  
     else:   
       print("Error extension tri vaut ", tri[-1])   
       raise ValueError("Error extension tri vaut ", tri[-1])
-    nii_job = call_girder_worker_convert_images_to_nii(folder_1_Rec_Data, folder_2_Nii_Conversion,bruker_name, extension)
-    zarr_job = call_girder_worker_convert_images_to_zarr(folder_1_Rec_Data, folder_3_Zarr_Conversion,bruker_name, extension)
-    assert_job_state_is_success(nii_job)
-    assert_job_state_is_success(zarr_job)
+    nii_job = call_girder_worker_convert_images_to_nii(folder_1_Rec_Data, folder_2_Nii_Conversion,bruker_name, extension, filename, user_fullname, user_email)
+    zarr_job = call_girder_worker_convert_images_to_zarr(folder_1_Rec_Data, folder_3_Zarr_Conversion,bruker_name, extension, filename, user_fullname, user_email)
     
-def read_and_check_that_the_format_of_json_file_is_ok(event):
+def count_bmp_images_in_folder(folder_path):
     '''
-    TODO
-    '''
-    print(event.info)
-    file = event.info['file']
-   
-    filename=file['name']
-
-    # open the file
-    json_file = File().open(file)
-    # load the key valye
-    json_dictionary = json.load(json_file)
-
-    # check that the key are ok
-    is_json_key_present(json_dictionary,'task-name')    
-    is_json_key_present(json_dictionary,'disque')      
-    is_json_key_present(json_dictionary,'project-date')       
-    is_json_key_present(json_dictionary,'project-id')     
-    is_json_key_present(json_dictionary,'project-name')  
-    is_json_key_present(json_dictionary,'sample-date')       
-    is_json_key_present(json_dictionary,'sample-id')     
-    is_json_key_present(json_dictionary,'sample-name')    
-    is_json_key_present(json_dictionary,'operation')  
-    is_json_key_present(json_dictionary,'bruker-name')
-    is_json_key_present(json_dictionary,'level')   
-    is_json_key_present(json_dictionary,'rho')  
-
-    # if something wrong
-    # do something
-    # 
-    # otherwise continue    
-    #
-    spacing=extract_the_log_information(json_dictionary, event)  
-
-    # the json file include a line which define the operation
-    # this has to be removed and remplaced by a clic in the interface
-    operation=json_dictionary['operation']
-
-    #if (json_dictionary['operation']=='Rec_Conversion'):
-    #elif (json_dictionary['operation']=='STI'):        
-    #else:
-    #    raise ValueError("Error", json_dictionary['operation']) 
-  
-def identify_the_task_to_be_done(event, filename):
-    '''
-    TODO
-    '''
-    # if the file is a json , that's ok
-
-    if ("task" in filename) and ("json" in filename):
-      
-      print('####################')
-      print('d')
-      print('####################')
-      read_and_check_that_the_format_of_json_file_is_ok(event)
-
-    else:
-        print('####################')
-        print('not going into the plugin') 
-        print('####################') 
-
-def _handler_data_process(event):
-    '''
-    TODO
-    '''
-    ##
-    #once a file is upload we gonna do some tasks
-    # we will use the name and format of the file to identify the file
-
-    info = event.info
-    file = info['file']
-    filename=file['name']
-    reference = event.info.get('reference', None)
-
-    identify_the_task_to_be_done(event, filename)
-
-    print('####################')
-    print(' plugin µct fin du handler ') 
-    print('####################')
-    
-def count_images_in_folder(folder_path):
-    '''
-    TODO
+    Returns the number of bmp images in the given folder.
     '''
     img_count = 0
     for _, _, files in os.walk(folder_path, topdown=False):
@@ -439,72 +294,60 @@ def count_images_in_folder(folder_path):
             _, extension = os.path.splitext(name)
             if extension.lower() == '.bmp':
                 img_count += 1
+
     return img_count
 
-def parse_log_file(folder_path):
+def read_json_file(file_id):
     '''
-    TODO
+    Reads json file.
     '''
-    for filename in os.listdir(folder_path):
-        if filename.endswith('.log'):
-            log_file_path = os.path.join(folder_path, filename)
-            break
-    else:
-        print("No .log file found in the folder path")
-        return
-    
-    with open(log_file_path, 'r') as log_file:
-        content = log_file.read()
-        
-    return content
 
-def json_insertion_scenario(fileId, event):
-    '''
-    TODO
-    '''
-    json_file = File().load(fileId, force=True)
+    json_file = File().load(file_id, force=True)
     with File().open(json_file) as f:
         json_data = json.load(f)
+
+    return json_data
+
+def json_insertion_scenario(file_id, event):
+    '''
+    Launches job action with the give file. 
+    '''
+    json_data = read_json_file(file_id)
     print(json_data)
-    if(is_json_key_present(json_data,'disque')):
+
+    if is_json_key_present(json_data, 'disque'):
         path_to_drive = json_data['disque']
-        print("Count images in the disc folder:",path_to_drive)
-        print("Number of images in the folder:",count_images_in_folder(path_to_drive))
-        # print("log file contents:",parse_log_file(path_to_drive))
-        # zarr_job = call_girder_worker_convert_images_to_zarr(path_to_drive,path_to_drive)
-        # nii_job = call_girder_worker_convert_images_to_nii(path_to_drive, path_to_drive)
-        # print(zarr_job)
-        extract_the_log_information(json_data,event)
+        print("Count images in the disc folder:", path_to_drive)
+        print("Number of images in the folder:", count_bmp_images_in_folder(path_to_drive))
+        extract_the_log_information(json_data, event)
     
 @app.task(bind=True)
 def _launchAction(self, event):
     '''
     Job action launching function.
     '''
-    print('================Lanching the Job===================')   
+    print('================ Lanching the Job ===================')   
 
-    fileId = event.info['_id']
-    if(event.info['mimeType'] == "application/json"):
+    file_id = event.info['_id'] # Retrieving inserted file id.
+    
+    if event.info['mimeType'] == "application/json":
+        # Inserted file is a json file.
         print("A json has been inserted \n")
-        json_insertion_scenario(fileId, event)        
-    print('===================================================')
+        json_insertion_scenario(file_id, event)
+            
 
     self.update_state(state="PROGRESS", meta={'progress': 50})
-    print('================End of the Job===================')   
+    print('================ End of the Job ===================')   
 
 class GirderPlugin(plugin.GirderPlugin):  
     DISPLAY_NAME = 'plugin_uct'
     CLIENT_SOURCE_PATH = 'web_client'
 
     def load(self, info):
-
         print('####################')
         print(' plugin µct start du handler ') 
         print('####################')        
-        # basically the line below trigger the plugin if a file is uploaded
-        # be careful for some reasons the data process events cannot send jobs..
-        # events.bind('data.process', 'my_first_process', _handler_data_process) 
         
-        # while the events bind model can send jobs
-        # events.bind('model.file.save.after', 'lance une action', _launchAction) 
+        # Binding file saving event to a task.
+        events.bind('model.file.save.after', 'lance une action', _launchAction) 
         pass
