@@ -492,32 +492,6 @@ def _launchAction(self, event):
     self.update_state(state="PROGRESS", meta={'progress': 50})
     print('================End of the Job===================')   
 
-@argument('json_filename', types.String, min=1, max=1)
-def read_json_file_as_secret(json_filename) -> dict:
-    '''
-    Reads data corresponding to the given json file as a secret.
-    '''
-    filename = os.path.join(json_filename)
-    try:
-        with open(filename, mode='r') as f:
-            return json.loads(f.read())
-    except FileNotFoundError:
-        return {}
-
-def set_settings():
-    '''
-    Sets SMTP webmail server configuration information.
-    '''
-    from girder.models.setting import Setting
-    setting = Setting()
-    
-    secrets = read_json_file_as_secret('settings.json')
-    setting.set(SettingKey.SMTP_ENCRYPTION, secrets["SMTP_ENCRYPTION"])
-    setting.set(SettingKey.SMTP_HOST, secrets["SMTP_HOST"])
-    setting.set(SettingKey.SMTP_PASSWORD, secrets["SMTP_PASSWORD"])
-    setting.set(SettingKey.SMTP_PORT, secrets["SMTP_PORT"])
-    setting.set(SettingKey.SMTP_USERNAME, secrets["SMTP_USERNAME"])
-
 class GirderPlugin(plugin.GirderPlugin):  
     DISPLAY_NAME = 'plugin_uct'
     CLIENT_SOURCE_PATH = 'web_client'
@@ -526,10 +500,7 @@ class GirderPlugin(plugin.GirderPlugin):
 
         print('####################')
         print(' plugin µct start du handler ') 
-        print('####################')
-
-        set_settings()
-        
+        print('####################')        
         # basically the line below trigger the plugin if a file is uploaded
         # be careful for some reasons the data process events cannot send jobs..
         # events.bind('data.process', 'my_first_process', _handler_data_process) 

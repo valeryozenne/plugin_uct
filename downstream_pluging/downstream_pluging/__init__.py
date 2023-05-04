@@ -7,10 +7,15 @@ from girder_worker_utils import types
 from string import Template
 from girder.utility import mail_utils
 from girder.models.user import User
+from girder.settings import SettingKey
 
 import girder.api.v1.user as user_api
 from girder.models.user import User
 from girder.exceptions import RestException
+
+
+import os
+import json
 #######################
 
 def read_mail_template(filename):
@@ -89,12 +94,39 @@ def validate_job_status(event):
         print('event.info == X')   
 
 
+@argument('json_filename', types.String, min=1, max=1)
+def read_json_file_as_secret(json_filename) -> dict:
+    '''
+    Reads data corresponding to the given json file as a secret.
+    '''
+    filename = os.path.join(json_filename)
+    try:
+        with open(filename, mode='r') as f:
+            return json.loads(f.read())
+    except FileNotFoundError:
+        return {}
+
+def set_settings():
+    '''
+    Sets SMTP webmail server configuration information.
+    '''
+    from girder.models.setting import Setting
+    setting = Setting()
+    
+    secrets = read_json_file_as_secret('settings.json')
+    setting.set(SettingKey.SMTP_ENCRYPTION, secrets["SMTP_ENCRYPTION"])
+    setting.set(SettingKey.SMTP_HOST, secrets["SMTP_HOST"])
+    setting.set(SettingKey.SMTP_PASSWORD, secrets["SMTP_PASSWORD"])
+    setting.set(SettingKey.SMTP_PORT, secrets["SMTP_PORT"])
+    setting.set(SettingKey.SMTP_USERNAME, secrets["SMTP_USERNAME"])
+
 class GirderPlugin(plugin.GirderPlugin):
     DISPLAY_NAME = 'downstream_pluging'  
     CLIENT_SOURCE_PATH = 'web_client'
    
     # downstream plugin
     def load(self, info):
+        set_settings()
         # add plugin loading logic here
         #print('on passe dans le plugin RMSBPlugin pour importer la tache')
         print("########################################################")
