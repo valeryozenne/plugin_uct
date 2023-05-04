@@ -37,16 +37,17 @@ def mail_sender(job_name, start_hour, processed_file, user_fullname, user_email,
     - the user email;
     - the corresponding mail template.
     '''
-    
-    if user_email is not None and mail_utils.validateEmailAddress(user_email):
-        print('####################')
-        print('mail_sender')
-        print('####################')
-        message_template = read_mail_template(template_name)
-        message = message_template.substitute(PERSON_NAME=user_fullname, JOB_NAME=job_name, START_HOUR=start_hour, PROCESSED_FILE=processed_file)
-        mail_utils.sendMail(subject='My mail from girder', text=message, to=user_email)
-    else:
-        print("send_mail_error")
+    print('####################')
+    print('mail_sender')
+    print('####################')
+    try:
+      if user_email is None or not mail_utils.validateEmailAddress(user_email):
+        raise
+      message_template = read_mail_template(template_name)
+      message = message_template.substitute(PERSON_NAME=user_fullname, JOB_NAME=job_name, START_HOUR=start_hour, PROCESSED_FILE=processed_file)
+      mail_utils.sendMail(subject='My mail from girder', text=message, to=user_email)
+    except:
+      print("send_mail_error")
 
 def get_mail_template(status):
   '''
