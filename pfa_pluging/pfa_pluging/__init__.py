@@ -12,11 +12,8 @@ from girder.api.rest import (
 #######################
 
 def call_girder_worker_fibonacci(number, filename, user_fullname, user_email):
-   #async_result = fibonacci.delay(  number,  girder_job_title="A Custom Job Title")
-    # Create a token with permissions of the current user.
    token = Token().createToken(user=getCurrentUser()) 
-   #.apply_async(countdown=60)
-   async_result =fibonacci.delay(number, 
+   async_result = fibonacci.delay(number, 
     filename=filename, 
     user_fullname=user_fullname, 
     user_email=user_email,
@@ -52,7 +49,7 @@ def _launchAction1(self):
     call_girder_worker_fibonacci(number, filename, user_fullname, user_email)
 
 class GirderPlugin(plugin.GirderPlugin):
-    DISPLAY_NAME = 'projet_pfa'
+    DISPLAY_NAME = 'pfa_pluging'
     CLIENT_SOURCE_PATH = 'web_client'
 
     def load(self, info):
@@ -62,7 +59,7 @@ class GirderPlugin(plugin.GirderPlugin):
         #events.bind('model.file.save.after', 'lance une action', _launchAction1)
         
         # evenement déclehncher depuis le bouton iutilisatuer
-        events.bind('model.file.save.after', 'Envoie de mail', _launchAction1)
+        events.bind('model.file.save.after', 'lance une action', _launchAction1)
 
         print('on passe dans le plugin projet_pfa pour importer la tache')
         pass

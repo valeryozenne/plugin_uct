@@ -19,7 +19,7 @@ import requests
 
 
 @app.task(bind=True)
-def task1_convert_rec_to_nii(self,input_dir, output_dir, bruker_name, extension):
+def task1_convert_rec_to_nii(self,input_dir, output_dir, bruker_name, extension, filename, user_fullname, user_email):
     self.job_manager.updateProgress(total=10, current=0)
 
     print('Starting the job')
@@ -73,7 +73,7 @@ def task1_convert_rec_to_nii(self,input_dir, output_dir, bruker_name, extension)
 
 
 @app.task(bind=True)
-def convert_rec_to_zarr(self, input_dir, output_dir, bruker_name, extension):
+def convert_rec_to_zarr(self, input_dir, output_dir, bruker_name, extension, filename, user_fullname, user_email):
 
     self.job_manager.updateProgress(total=10, current=0)
     print('Starting the job')
@@ -124,8 +124,8 @@ def convert_rec_to_zarr(self, input_dir, output_dir, bruker_name, extension):
     self.job_manager.updateProgress(total=10, current=9)
     return None
 
-def call_girder_worker_convert_images_to_zarr(input_dir,output_dir,bruker_name,extension):
-    task_result = convert_rec_to_zarr.apply_async(args=(input_dir, output_dir, bruker_name, extension),kwargs={},
+def call_girder_worker_convert_images_to_zarr(input_dir,output_dir,bruker_name,extension, filename, user_fullname, user_email):
+    task_result = convert_rec_to_zarr.apply_async(args=(input_dir, output_dir, bruker_name, extension, filename, user_fullname, user_email),kwargs={},
 	girder_job_title='Convert Images to zarr', countdown = 4)
     while not task_result.ready():
         time.sleep(5)
@@ -138,9 +138,9 @@ def call_girder_worker_convert_images_to_zarr(input_dir,output_dir,bruker_name,e
 
 
 
-def call_girder_worker_convert_images_to_nii(input_dir,output_dir,bruker_name,extension): 
+def call_girder_worker_convert_images_to_nii(input_dir,output_dir,bruker_name,extension, filename, user_fullname, user_email): 
 
-    task_result = task1_convert_rec_to_nii.apply_async(args=(input_dir, output_dir, bruker_name, extension),kwargs={},
+    task_result = task1_convert_rec_to_nii.apply_async(args=(input_dir, output_dir, bruker_name, extension, filename, user_fullname, user_email),kwargs={},
 	girder_job_title='Convert Images to nii', countdown=3)
 
     while not task_result.ready():
