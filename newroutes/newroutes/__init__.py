@@ -56,25 +56,18 @@ class MakeRoutes(Resource):
         .errorResponse('Read permission denied on the item.', 403)
     )
     def makeSpamFile(self, item):
-        user = self.getCurrentUser()
-        itemObj = Item().load(item['_id'], force=True, user=user)
-        file = File().createFile(creator,
-                item=item,
-                name='emptyFile.txt',
-                size=0,
-                assetstore=item['assetstoreId']
-        )
-        print("Fichier texte vide ajouté dans l\'item.")
+        for file in Item().childFiles(item):
+            events.trigger('Run job', file)
         pass
 
     @access.user(scope=TokenScope.DATA_READ)
     @autoDescribeRoute(
-        Description('It Does Something')
+        Description('Send Email to user')
         .modelParam('id', 'The item ID',
                     model='item', level=AccessType.WRITE, paramType='path')
         .errorResponse('ID was invalid.')
         .errorResponse('Read permission denied on the item.', 403)
     )
     def makeSpamEmail(self, item):
-        print("I was here")
+        events.trigger('Envoie de mail', item)
         pass

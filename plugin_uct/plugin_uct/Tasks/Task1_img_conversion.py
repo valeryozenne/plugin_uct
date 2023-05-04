@@ -18,61 +18,6 @@ from girder_worker.task import Task
 import requests
 
 
-# @app.task
-# def task1_convert_rec_to_zarr(job,folder_path, save_folder_path):
-    
-#     job = Job().updateJob(
-#             job, log='Started Zarr conversion\n',
-#             status=JobStatus.RUNNING,
-#             progressCurrent=0,
-#             progressTotal=100
-#         )
-
-#     img_arrays = []
-#     for _, _, files in os.walk(folder_path, topdown=False):
-#         for name in files:
-#             _, extension = os.path.splitext(name)
-#             if extension.lower() == '.bmp' or extension.lower() == '.tif':
-#                 img_path = os.path.join(folder_path, name)
-#                 img = imageio.imread(img_path)
-#                 img_arrays.append(da.from_array(img))
-#     concatenated_imgs = da.concatenate(img_arrays, axis=0)
-#     # save_folder_path = os.path.join(save_folder_path, 'Task1')
-#     os.makedirs(save_folder_path, exist_ok=True)
-#     da.to_zarr(concatenated_imgs, os.path.join(save_folder_path, 'concatenated_images.zarr'))
-#     job = Job().updateJob(
-#             job, log='Finished Zarr conversion\n',
-#             status=JobStatus.RUNNING,
-#             progressCurrent=0,
-#             progressTotal=100
-#         )
-    
-#     return job
-
-# @app.task
-# def task1_convert_images_to_nii(folder_path, save_folder_path):
-#     img_arrays = []
-#     for _, _, files in os.walk(folder_path, topdown=False):
-#         for name in files:
-#             _, extension = os.path.splitext(name)
-#             if extension.lower() == '.bmp' or extension.lower() == '.tif':
-#                 img_path = os.path.join(folder_path, name)
-#                 img = imageio.imread(img_path)
-#                 img_arrays.append(da.from_array(img))
-#     concatenated_imgs = da.concatenate(img_arrays, axis=0)
-#     # save_folder_path = os.path.join(save_folder_path, 'Task1')
-    
-#     nii_img = nib.Nifti1Image(concatenated_imgs.compute(), np.eye(4))
-#     nib.save(nii_img, os.path.join(save_folder_path, 'concatenated_images.nii.gz'))
-    
-#     return concatenated_imgs
-
-
-
-
-#job_manager = app.job_manager
-
-
 @app.task(bind=True)
 def task1_convert_rec_to_nii(self,input_dir, output_dir, bruker_name, extension):
     self.job_manager.updateProgress(total=10, current=0)

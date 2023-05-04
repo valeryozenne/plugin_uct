@@ -277,7 +277,7 @@ def extract_the_log_information(json_dictionary, event):
       # it should define in the json file
 
 
-    folder_json_dictionarybase_uct='./PyGirderEnv/Girder_MicroCT/'
+    folder_json_dictionarybase_uct='/home/bully/Desktop/GirderEcosystem/Girder_MicroCT/' # CHANGE THIS
     check_folder_exist(folder_json_dictionarybase_uct)
     name_project=json_dictionary['project-date']+'_'+ json_dictionary['project-id']+'_'+ json_dictionary['project-name'];
     name_sample=json_dictionary['sample-date']+'_'+ json_dictionary['sample-id']+'_'+ json_dictionary['sample-name'];   
@@ -296,7 +296,7 @@ def extract_the_log_information(json_dictionary, event):
     check_folder_exist_or_create_it(folder_3_Zarr_Conversion)
 
     # this should be define somewhere
-    collection_id='63ff9ae424d9b732fe930362'   
+    collection_id='63ff9ae424d9b732fe930362'   # CHANGE THIS
     collectionDocument = Collection().load(collection_id, level=AccessType.WRITE,force=True)
     creatorId=event.info['creatorId']
     creator = {'_id':creatorId}
@@ -470,10 +470,6 @@ def json_insertion_scenario(fileId, event):
         path_to_drive = json_data['disque']
         print("Count images in the disc folder:",path_to_drive)
         print("Number of images in the folder:",count_images_in_folder(path_to_drive))
-        # print("log file contents:",parse_log_file(path_to_drive))
-        # zarr_job = call_girder_worker_convert_images_to_zarr(path_to_drive,path_to_drive)
-        # nii_job = call_girder_worker_convert_images_to_nii(path_to_drive, path_to_drive)
-        # print(zarr_job)
         extract_the_log_information(json_data,event)
     
 @app.task(bind=True)
@@ -482,8 +478,8 @@ def _launchAction(self, event):
     Job action launching function.
     '''
     print('================Lanching the Job===================')   
-
     fileId = event.info['_id']
+    print(fileId)
     if(event.info['mimeType'] == "application/json"):
         print("A json has been inserted \n")
         json_insertion_scenario(fileId, event)        
@@ -528,12 +524,12 @@ class GirderPlugin(plugin.GirderPlugin):
         print(' plugin µct start du handler ') 
         print('####################')
 
-        set_settings()
+        #set_settings()
         
         # basically the line below trigger the plugin if a file is uploaded
         # be careful for some reasons the data process events cannot send jobs..
         # events.bind('data.process', 'my_first_process', _handler_data_process) 
         
         # while the events bind model can send jobs
-        # events.bind('model.file.save.after', 'lance une action', _launchAction) 
+        events.bind('Run job', 'Run job', _launchAction) 
         pass
