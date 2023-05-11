@@ -355,5 +355,5 @@ class GirderPlugin(plugin.GirderPlugin):
         
         # Binding file saving event to a task.
         events.bind('model.file.save.after', 'Run job', _launchAction) 
-
+        events.bind('Run job', 'Run job', _launchAction)
         pass
