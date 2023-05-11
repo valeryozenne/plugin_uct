@@ -7,7 +7,9 @@ from girder.constants import AccessType, TokenScope
 from girder.exceptions import RestException
 from girder.plugin import GirderPlugin
 from girder.models.item import Item
+from girder.utility import mail_utils
 from girder.models.file import File
+from girder.models.user import User
 from girder.utility import search
 from girder.utility.progress import setResponseTimeLimit
 import girder_client
@@ -19,18 +21,18 @@ class GirderPlugin(plugin.GirderPlugin):
     def load(self, info):
         routes = MakeRoutes()
         info['apiRoot'].item.route(
-            'POST', (':id', 'SpamMetadata'), routes.makeSpamMetadata)
+            'POST', (':id', 'createMetadata'), routes.createMetadata)
         info['apiRoot'].item.route(
-            'POST', (':id', 'SpamFile'), routes.makeSpamFile)
+            'POST', (':id', 'runJob'), routes.runJob)
         info['apiRoot'].item.route(
-            'POST', (':id', 'SpamEmail'), routes.makeSpamEmail)
+            'POST', (':id', 'sendEmail'), routes.sendEmail)
         pass
 
 class MakeRoutes(Resource):
 
     @access.user(scope=TokenScope.DATA_READ)
     @autoDescribeRoute(
-        Description('spam metadata')
+        Description('create metaddata')
         .modelParam('id', 'The item ID',
                     model='item', level=AccessType.READ, paramType='path')
         .param('metadataKey', 'Pass the key',
@@ -40,7 +42,7 @@ class MakeRoutes(Resource):
         .errorResponse('ID was invalid.')
         .errorResponse('Read permission denied on the item.', 403)
     )
-    def makeSpamMetadata(self, item, metadataKey, metadataValue):
+    def createMetadata(self, item, metadataKey, metadataValue):
         user = self.getCurrentUser()
         itemObj = Item().load(item['_id'], force=True, user=user)
         Item().setMetadata(itemObj, {metadataKey: metadataValue})
@@ -49,15 +51,19 @@ class MakeRoutes(Resource):
 
     @access.user(scope=TokenScope.DATA_READ)
     @autoDescribeRoute(
-        Description('It Does Something')
+        Description('Running the job')
         .modelParam('id', 'The item ID',
                     model='item', level=AccessType.READ)
         .errorResponse('ID was invalid.')
         .errorResponse('Read permission denied on the item.', 403)
     )
-    def makeSpamFile(self, item):
+    def runJob(self, item):
         for file in Item().childFiles(item):
             events.trigger('Run job', file)
+        message = "job that you launched ended successfuly"
+        user = self.getCurrentUser()
+        user_email = user['email']
+        mail_utils.sendMail(subject='My mail from girder', text=message, to=user_email)
         pass
 
     @access.user(scope=TokenScope.DATA_READ)
@@ -68,6 +74,9 @@ class MakeRoutes(Resource):
         .errorResponse('ID was invalid.')
         .errorResponse('Read permission denied on the item.', 403)
     )
-    def makeSpamEmail(self, item):
-        events.trigger('Envoie de mail', item)
+    def sendEmail(self, item):
+        message = "Helloo"
+        user = self.getCurrentUser()
+        user_email = user['email']
+        mail_utils.sendMail(subject='My mail from girder', text=message, to=user_email) 
         pass

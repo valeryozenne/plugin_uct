@@ -32,7 +32,7 @@ wrap(ItemView, 'render', function (render) {
 ItemView.prototype.events['click .g-add-metadata-button'] = function () {
     restRequest({
         method: 'POST',
-        url: `item/${this.model.id}/SpamMetadata?metadataKey=TEST&metadataValue=TEST`,
+        url: `item/${this.model.id}/createMetadata?metadataKey=TEST&metadataValue=TEST`,
         error: null
     })
         .done((resp) => {
@@ -61,7 +61,7 @@ ItemView.prototype.events['click .g-add-metadata-button'] = function () {
 ItemView.prototype.events['click .g-send-email-button'] = function () {
     restRequest({
         method: 'POST',
-        url: `item/${this.model.id}/SpamEmail`,
+        url: `item/${this.model.id}/sendEmail`,
         error: null
     })
         .done((resp) => {
@@ -90,7 +90,7 @@ ItemView.prototype.events['click .g-send-email-button'] = function () {
 ItemView.prototype.events['click .g-run-job-button'] = function () {
     restRequest({
         method: 'POST',
-        url: `item/${this.model.id}/SpamFile`,
+        url: `item/${this.model.id}/runJob`,
         error: null
     })
         .done((resp) => {
