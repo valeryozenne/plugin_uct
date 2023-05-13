@@ -64,6 +64,7 @@ class MakeRoutes(Resource):
         user = self.getCurrentUser()
         user_email = user['email']
         mail_utils.sendMail(subject='My mail from girder', text=message, to=user_email)
+
         pass
 
     @access.user(scope=TokenScope.DATA_READ)
@@ -75,7 +76,7 @@ class MakeRoutes(Resource):
         .errorResponse('Read permission denied on the item.', 403)
     )
     def sendEmail(self, item):
-        message = "Helloo"
+        message = ""
         user = self.getCurrentUser()
         user_email = user['email']
         mail_utils.sendMail(subject='My mail from girder', text=message, to=user_email) 

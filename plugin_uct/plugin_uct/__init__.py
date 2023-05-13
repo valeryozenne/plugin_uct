@@ -111,20 +111,10 @@ def read_log_file_and_save_as_json(filename, output_folder):
             line = line.rstrip("\n")
         
             if substring in line:
-                #print("Found!")
-                #print('coucou')
                 x = line.split("=")
-                #print(x)
                 entry = {x[0]:x[1]} 
-                #print(entry)
-                #new_entry= {'people': x[0] }
                 list_of_json_block[num_sub-1].append(entry)
-                #list_of_json_block[num_sub-1].append([x[0], x[1]])
             else:
-            
-                #print("Not found!")
-                #print(line)
-                #print(num,num_sub)
                 json_block = [] 
                 name = line[1:len(line)-1]
                 list_of_json_name.append(name)
@@ -136,7 +126,6 @@ def read_log_file_and_save_as_json(filename, output_folder):
         for jj in range(0,num_sub):
           d5 = fix_bordel_with_list_and_dict(list_of_json_block[jj])
           new_data = {list_of_json_name[jj]: d5 }
-          #print(json.dumps(new_data, sort_keys=True, indent=4))
           filename_out = 'uCT_'+list_of_json_name[jj]+'.json'
           filename_out = filename_out.replace(" ", "_")
           print(output_folder+'/'+filename_out)
@@ -153,7 +142,6 @@ def get_spacing(list_of_json_block):
     spacing=0
     Reconstruction=list_of_json_block[3]
     for it in Reconstruction:
-      #print(it)
       pairs = it. items()
       for key, value in pairs: 
          if ('Pixel' in key):
@@ -189,34 +177,27 @@ def upload_metadata_from_json(list_of_json_block, acquisitionItemDocument):
                         print(lolo, value)
                         meta_is_ok=Item().setMetadata( acquisitionItemDocument, {lolo:value}, allowNull=True)         
 
+
 def extract_the_log_information(json_dictionary, event):
     '''
-    TODO
+    Reads the 'filename' mail template.
+    find the log file 
+    read and parse the log file
+    convert to json
+    save it
+    upload the metadata
     '''
-    # function do too many things, it has to be splitted
-    # check that the physical folder (where are the data) exists
-    # find the log file 
-    # read and parse the log file
-    # convert to json
-    # save it
-    # upload the metadata
-
     print('################# ###')
     print('extract_the_log_information')
     print('####################')
 
-    # if (json_dictionary['disque']!='Imagerie2'):
-    #    raise ValueError("Error")
-    # else:
-    #    pass
-      # it should define in the json file
 
     filename = event.info['name']
     user_fullname = getCurrentUser()['firstName'] + " " + getCurrentUser()['lastName']
     user_email = getCurrentUser()['email']
 
 
-    folder_json_dictionarybase_uct='/home/bully/Desktop/GirderEcosystem/Girder_MicroCT/' # CHANGE THIS
+    folder_json_dictionarybase_uct='/home/bully/Desktop/GirderEcosystem/Girder_MicroCT/' # CHANGE THIS WITH YOUR OWN
 
     check_folder_exist(folder_json_dictionarybase_uct)
     name_project = json_dictionary['project-date']+'_'+ json_dictionary['project-id']+'_'+ json_dictionary['project-name'];
@@ -237,11 +218,10 @@ def extract_the_log_information(json_dictionary, event):
 
     # this should be define somewhere
 
-    collection_id='63ff9ae424d9b732fe930362'   # CHANGE THIS
+    collection_id='63ff9ae424d9b732fe930362'   # CHANGE THIS WITH YOUR OWN
     collectionDocument = Collection().load(collection_id, level=AccessType.WRITE,force=True)
     creatorId = event.info['creatorId']
     creator = {'_id':creatorId}
-    # print(creator)
     
     projectFolderDocument = Folder().createFolder( collectionDocument, name_project, parentType='collection',reuseExisting=True, public=True, creator=None )
     sampleFolderDocument = Folder().createFolder( projectFolderDocument, name_sample, parentType='folder',reuseExisting=True, public=True, creator=None )
@@ -250,7 +230,7 @@ def extract_the_log_information(json_dictionary, event):
     # on peut mettre les metadata dans le dossier
     acquisitionItemDocument = Item().createItem(name='log_from_rec_'+bruker_name, creator=creator, folder=sampleFolderDocument, reuseExisting=True)
     
-    #print(json_dictionary)
+
     log_file = folder_1_Rec_Data+'/'+bruker_name+'__rec.log'
     check_file_exist(log_file)
     list_of_json_block = read_log_file_and_save_as_json(log_file, folder_1_Rec_Data)
@@ -284,6 +264,8 @@ def extract_the_log_information(json_dictionary, event):
     else:   
       print("Error extension tri vaut ", tri[-1])   
       raise ValueError("Error extension tri vaut ", tri[-1])
+
+    
     nii_job = call_girder_worker_convert_images_to_nii(folder_1_Rec_Data, folder_2_Nii_Conversion,bruker_name, extension, filename, user_fullname, user_email)
     zarr_job = call_girder_worker_convert_images_to_zarr(folder_1_Rec_Data, folder_3_Zarr_Conversion,bruker_name, extension, filename, user_fullname, user_email)
     
@@ -340,7 +322,7 @@ def _launchAction(self, event):
         json_insertion_scenario(file_id, event)
             
 
-    self.update_state(state="PROGRESS", meta={'progress': 50})
+    #self.update_state(state="PROGRESS", meta={'progress': 50})
     print('================ End of the Job ===================')   
 
 class GirderPlugin(plugin.GirderPlugin):  
@@ -354,6 +336,6 @@ class GirderPlugin(plugin.GirderPlugin):
         print('####################')        
         
         # Binding file saving event to a task.
-        events.bind('model.file.save.after', 'Run job', _launchAction) 
+        events.bind('model.file.save.after', 'Upload Run job', _launchAction) 
         events.bind('Run job', 'Run job', _launchAction)
         pass
