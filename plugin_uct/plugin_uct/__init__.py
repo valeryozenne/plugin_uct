@@ -21,7 +21,7 @@ from girder_client import GirderClient
 from girder_jobs.constants import JobStatus
 from girder_worker_utils import types
 from girder.constants import TokenScope
-from girder.api.rest import boundHandler, getCurrentUser
+from girder.api.rest import boundHandler
 from girder_worker_utils.decorators import argument
 
 # USED
@@ -32,6 +32,7 @@ from girder.models.folder import Folder
 from girder.models.collection import Collection
 from girder import events
 from girder_worker.app import app
+from girder.api.rest import getCurrentUser
 
 ## Custom import.
 from plugin_uct.Tasks.Task1_img_conversion import call_girder_worker_convert_images_to_zarr, call_girder_worker_convert_images_to_nii
@@ -348,12 +349,6 @@ class GirderPlugin(plugin.GirderPlugin):
     CLIENT_SOURCE_PATH = 'web_client'
 
     def load(self, info):
-        print('####################')
-        print(' plugin µct start du handler ') 
-
-        print('####################')        
-        
         # Binding file saving event to a task.
         events.bind('Run job', 'Run job', _launchAction) 
-
         pass

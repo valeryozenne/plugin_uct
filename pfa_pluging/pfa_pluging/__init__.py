@@ -59,7 +59,7 @@ class GirderPlugin(plugin.GirderPlugin):
         #events.bind('model.file.save.after', 'lance une action', _launchAction1)
         
         # evenement déclehncher depuis le bouton iutilisatuer
-        events.bind('model.file.save.after', 'lance une action', _launchAction1)
+        # events.bind('model.file.save.after', 'lance une action', _launchAction1)
 
         print('on passe dans le plugin projet_pfa pour importer la tache')
         pass
