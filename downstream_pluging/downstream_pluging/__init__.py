@@ -69,7 +69,7 @@ def validate_job_status(event):
 
     event_job = event.info['job']
     current_status = event_job['status']
-    args = event_job['kwargs']
+    args = event_job['args']
 
     print("this is the progress:", current_status)
 
@@ -86,9 +86,9 @@ def validate_job_status(event):
     elif (current_status == JobStatus.SUCCESS or current_status == JobStatus.ERROR or current_status == JobStatus.CANCELED):
       job_name = event_job['title']
       created_at = event_job['created'].strftime("%H:%M:%S")
-      filename = args['filename']
-      user_fullname = args['user_fullname']
-      user_email = args['user_email']
+      filename = args[len(args)-3]
+      user_fullname = args[len(args)-2]
+      user_email = args[len(args)-1]
       mail_template = get_mail_template(current_status)
 
       mail_sender(job_name, created_at, filename, user_fullname, user_email, mail_template)

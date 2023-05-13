@@ -3,7 +3,7 @@ from girder import events
 
 from girder.models.token import Token
 from girder.api.rest import getCurrentUser
-from gwexample.analyses.tasks import fibonacci
+from pfa_pluging.Tasks.fibonacci import fibonacci
 
 from girder.api.rest import (
     getCurrentUser,
