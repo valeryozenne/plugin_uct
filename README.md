@@ -5,10 +5,11 @@
   <summary>Table of Contents</summary>
   <ol>
     <li>
-      <a href="#initialisation">Initialisation</a>
+      <a href="#installation">Installation</a>
       <ul>
         <li><a href="#prérequis">Prérequis</a></li>
-        <li><a href="#installation">Installation</a></li>
+        <li><a href="#initialisation">Initialisation</a></li>
+        <li><a href="#lancement">Lancement</a></li>
       </ul>
     </li>
   </ol>
