@@ -2,7 +2,7 @@
 
 <!-- TABLE OF CONTENTS -->
 <details>
-  <summary>Table of Contents</summary>
+  <summary>Table des matières</summary>
   <ol>
     <li>
       <a href="#installation">Installation</a>
