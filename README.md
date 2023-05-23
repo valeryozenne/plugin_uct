@@ -139,7 +139,7 @@ mongo --eval 'db.runCommand({ connectionStatus: 1 })'
     pip install nibabel
     ```
 
-### Installation de plugins officiel Girder via pip
+### Installation des plugins officiel Girder via pip
 
 Toujours dans l'environnement virtuel.
 
@@ -155,7 +155,7 @@ pip install girder-slicer-cli-web
 pip install girder-worker
 ```
 
-### Installation des plugins dans Girder
+### Installation des plugins développés dans Girder
 
 Toujours dans l'environnement virtuel.
 
@@ -175,7 +175,7 @@ Toujours dans l'environnement virtuel.
 
 ### Ressources du projet
 
-Doivent être créées à la racine du projet (GirderEcosystem), pourront être déplacer dans un dossier "ressources" par la suite. 
+Doivent être créées à la racine du projet (GirderEcosystem), pourront être déplacer dans un répertoire "ressources" par la suite. 
 
 - Templates de mails
 
