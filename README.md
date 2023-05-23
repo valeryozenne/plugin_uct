@@ -10,6 +10,7 @@
         <li><a href="#prérequis">Prérequis</a></li>
         <li><a href="#initialisation">Initialisation</a></li>
         <li><a href="#lancement">Lancement</a></li>
+        <li><a href="#annexes">Annexes</a></li>
       </ul>
     </li>
   </ol>
