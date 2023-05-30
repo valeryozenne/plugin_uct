@@ -216,7 +216,8 @@ def extract_the_log_information(json_dictionary, event):
     user_email = getCurrentUser()['email']
 
 
-    folder_json_dictionarybase_uct='/home/bully/Desktop/GirderEcosystem/Girder_MicroCT/' # CHANGE THIS
+    #folder_json_dictionarybase_uct='/home/bully/Desktop/GirderEcosystem/Girder_MicroCT/' # CHANGE THIS
+    folder_json_dictionarybase_uct='/home/valeryozenne/mount/MicroCT/' # CHANGE THIS
 
     check_folder_exist(folder_json_dictionarybase_uct)
     name_project = json_dictionary['project-date']+'_'+ json_dictionary['project-id']+'_'+ json_dictionary['project-name'];
@@ -237,7 +238,8 @@ def extract_the_log_information(json_dictionary, event):
 
     # this should be define somewhere
 
-    collection_id='63ff9ae424d9b732fe930362'   # CHANGE THIS
+    #collection_id='63ff9ae424d9b732fe930362'   # CHANGE THIS
+    collection_id='619656b5dce91612bb7256dd'
     collectionDocument = Collection().load(collection_id, level=AccessType.WRITE,force=True)
     creatorId = event.info['creatorId']
     creator = {'_id':creatorId}
