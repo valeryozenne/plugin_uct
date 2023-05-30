@@ -20,13 +20,15 @@ def read_mail_template(filename):
         template_file_content = template_file.read()
     return Template(template_file_content)
 
-@argument('job_name', types.String, min=1, max=1)
-@argument('start_hour', types.String, min=1, max=1)
-@argument('processed_file', types.String, min=1, max=1)
-@argument('user_fullname', types.String, min=1, max=1)
-@argument('user_email', types.String, min=1, max=1)
+#@argument('job_name', types.String, min=1, max=1)
+#@argument('user_email', types.String, min=1, max=1)
+#@argument('subject_email', types.String, min=1, max=1)
+#@argument('processed_file', types.String, min=1, max=1)
+#@argument('user_fullname', types.String, min=1, max=1)
+
+
 @argument('template_name', types.String, min=1, max=1)
-def mail_sender(job_name, start_hour, processed_file, user_fullname, user_email, template_name):
+def mail_sender(event_job,  template_name):
     '''
     Sends a mail to the current user running the job with some log information:
     - the user fullname;
@@ -40,12 +42,31 @@ def mail_sender(job_name, start_hour, processed_file, user_fullname, user_email,
     print('####################')
     print('mail_sender')
     print('####################')
+
+    id=event_job['_id']
+    job_name = event_job['title']
+    start_hour = event_job['created'].strftime("%H:%M:%S")
+    end_hour = event_job['updated'].strftime("%H:%M:%S")
+    job_arguments=event_job['args']
+    ####
+    bruker_name=job_arguments[2]
+
+    processed_file = job_arguments[len(job_arguments)-3]
+    user_fullname = job_arguments[len(job_arguments)-2]
+    user_email = job_arguments[len(job_arguments)-1]
+    
+    dict_split_path=job_arguments[0].split('/')
+    if dict_split_path[len(dict_split_path)-1]=='1_Rec_Data':
+       print("this is the conversion operation")
+    ####
+    subject_email="MilleFeuilles Notification - SUCCESS - " + bruker_name   
+    
     try:
       if user_email is None or not mail_utils.validateEmailAddress(user_email):
         raise
       message_template = read_mail_template(template_name)
-      message = message_template.substitute(PERSON_NAME=user_fullname, JOB_NAME=job_name, START_HOUR=start_hour, PROCESSED_FILE=processed_file)
-      mail_utils.sendMail(subject='My mail from girder', text=message, to=user_email)
+      message = message_template.substitute(PERSON_NAME=user_fullname, JOB_NAME=job_name, START_HOUR=start_hour, END_HOUR=end_hour, PROCESSED_FILE=processed_file)
+      mail_utils.sendMail(subject=subject_email, text=message, to=user_email)
     except:
       print("send_mail_error")
 
@@ -84,14 +105,17 @@ def validate_job_status(event):
     elif (current_status == JobStatus.RUNNING):
       print('event.info == RUNNING (2) ')
     elif (current_status == JobStatus.SUCCESS or current_status == JobStatus.ERROR or current_status == JobStatus.CANCELED):
-      job_name = event_job['title']
-      created_at = event_job['created'].strftime("%H:%M:%S")
-      filename = args[len(args)-3]
-      user_fullname = args[len(args)-2]
-      user_email = args[len(args)-1]
-      mail_template = get_mail_template(current_status)
-
-      mail_sender(job_name, created_at, filename, user_fullname, user_email, mail_template)
+      #id=event_job['_id']
+      #job_name = event_job['title']
+      #created_at = event_job['created'].strftime("%H:%M:%S")
+      #updated_at = event_job['updated'].strftime("%H:%M:%S")
+      #filename = args[len(args)-3]
+      #user_fullname = args[len(args)-2]
+      #user_email = args[len(args)-1]
+      #bruker_name=event_job['args'][2]
+      mail_template = get_mail_template(current_status)      
+      
+      mail_sender(event_job, mail_template)
     else:
         print('event.info == X')   
 
