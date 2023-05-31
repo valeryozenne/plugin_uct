@@ -163,7 +163,7 @@ Toujours dans l'environnement virtuel.
 1. Dans un dossier Plugins à partir de la racine, cloner le dépôt
     ```sh
     mkdir Plugins
-    git clone https://github.com/valeryozenne/plugin_uct
+    git clone https://github.com/valeryozenne/plugin_ihu_uct_main
     ```
 2. Se déplacer sur la branche "PFA_plugins"
     ```sh
@@ -246,7 +246,7 @@ celery -A worker  girder_worker.app -l info -E
 
 ## Annexes
 
-- Dans le plugin "PyGirderEnv/lib/python3.8/site-packages/plugin_uct/init.py", modifier les lignes 201 et 222
+- Dans le plugin "PyGirderEnv/lib/python3.8/site-packages/plugin_ihu_uct_main/init.py", modifier les lignes 201 et 222
     ```python
     201: folder_json_dictionarybase_uct='/chemin/absolu/vers/GirderEcosystem/Girder_MicroCT/'
     222: collection_id='id_de_la_collection_ou_inserer_les_json'
@@ -262,7 +262,7 @@ Y ajouter les chemings vers les dossiers des tasks à détecter
 
 ```python
 def task_imports(self):
-    return ['girder_worker.docker.tasks','plugin_uct.Tasks']
+    return ['girder_worker.docker.tasks','plugin_ihu_uct_main.Tasks']
 ```
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
