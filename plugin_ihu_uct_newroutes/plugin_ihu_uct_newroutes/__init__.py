@@ -70,9 +70,9 @@ class MakeRoutes(Resource):
     )
     def runJob(self, item):
         #for file in Item().childFiles(item):
-        print(" sending trigger for Run job ")
-        events.trigger('Run job', item)
-        print(" trigger send for Run job ")
+        print(" sending trigger for Run job fibonacci and progress")
+        events.trigger('Run job fibonacci and progress', item)
+        print(" trigger send for Run job fibonacci and progress")
         #message = "job that you launched ended successfuly"
         #user = self.getCurrentUser()
         #user_email = user['email']

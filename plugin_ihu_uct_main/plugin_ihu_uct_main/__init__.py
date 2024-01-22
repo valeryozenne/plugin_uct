@@ -335,7 +335,7 @@ def json_insertion_scenario(file_id, event):
         path_to_drive = json_data['disque']
 
         print("Count images in the disc folder:", path_to_drive)
-        print("Number of images in the folder:", count_bmp_images_in_folder(path_to_drive))
+        #print("Number of images in the folder:", count_bmp_images_in_folder(path_to_drive))
         extract_the_log_information(json_data, event)
     
 @app.task(bind=True)
@@ -406,13 +406,13 @@ def _launchActionExamples(self, event):
     user_fullname = getCurrentUser()['firstName'] + " " + getCurrentUser()['lastName']
     user_email = getCurrentUser()['email']   
     
-    number=19
+    number=20
     call_girder_worker_fibonacci(number, filename, user_fullname, user_email)
 
-    number =5    
+    number =20    
     job=call_girder_worker_progress(number,filename, user_fullname,user_email)
     print(job)
-    number =10    
+    number =15    
     job=call_girder_worker_progress(number,filename, user_fullname,user_email)
     print(job)
 
@@ -447,7 +447,7 @@ class GirderPlugin(plugin.GirderPlugin):
     def load(self, info):
         # Binding file saving event to a task.
         events.bind('model.file.save.after', 'Upload Run job', _launchActionConversion) 
-        events.bind('Run job', 'Run job', _launchActionExamples)
+        events.bind('Run job fibonacci and progress', 'Run job fibonacci and progress', _launchActionExamples)
         #events.bind('Run job computeTensor', 'Run job computeTensor', _launchActionComputeTensor)
         #events.bind('Run job computeVectors', 'Run job computeVectors', _launchActionComputeVectors)
         #events.bind('Run job computeMetrics', 'Run job computeMetrics', _launchActionComputeMetrics)

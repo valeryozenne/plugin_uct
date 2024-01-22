@@ -130,7 +130,6 @@ def validate_job_status(event):
             mail_sender(event_job, mail_template)
           else:
             print(job_name_lower_cases , " do not include email") 
-
         else:
             print('event.info == X') 
     else:
